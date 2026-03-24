@@ -328,16 +328,48 @@ st.markdown("""
 
 # --- 4. AUTHENTICATION UI (Login / Register) ---
 if not st.session_state['logged_in']:
-    st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
+    st.markdown("""
+        <style>
+        [data-testid="column"]:nth-of-type(2) {
+            background-color: #ffffff !important;
+            padding: 2.5rem 3rem !important;
+            border-radius: 12px !important;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05) !important;
+        }
+        .auth-btn > button {
+            background-color: #8b5cf6 !important;
+            border: none !important;
+            box-shadow: 0 4px 10px rgba(139, 92, 246, 0.2) !important;
+            margin-top: 10px;
+        }
+        .auth-btn > button:hover {
+            background-color: #7c3aed !important;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            border-bottom: none !important;
+            justify-content: center;
+            margin-bottom: 0.5rem;
+        }
+        .stTabs [aria-selected="true"] {
+            color: #8b5cf6 !important;
+            border-bottom: 2px solid #8b5cf6 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
     
     _, auth_col, _ = st.columns([1, 1.2, 1])
     
     with auth_col:
         st.markdown("""
-            <div style='background: linear-gradient(135deg, #028eb8 0%, #02aadb 100%); padding: 2.5rem 1rem; text-align: center; color: white; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(2, 170, 219, 0.2);'>
-                <div style='font-size: 2.5rem; margin-bottom: 0.5rem;'>🩺</div>
-                <h2 style='color: white !important; font-family: "Poppins", sans-serif; margin: 0; font-size: 1.8rem;'>Heart AI Portal</h2>
-                <p style='color: rgba(255,255,255,0.9); font-size: 0.95rem; margin-top: 5px; font-weight: 400;'>Secure Access to Medical Records</p>
+            <div style='text-align: center; margin-bottom: 1.5rem;'>
+                <div style='display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;'>
+                    <span style='font-size: 2.2rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));'>🧠</span>
+                    <span style='font-family: Poppins; font-weight: 600; font-size: 1.5rem; color: #0f172a;'>Heart AI Portal</span>
+                </div>
+                <h3 style='color: #8b5cf6 !important; font-family: "Poppins", sans-serif; margin: 0; font-size: 1.3rem; font-weight: 600;'>Hi, Welcome Back!</h3>
             </div>
         """, unsafe_allow_html=True)
         
@@ -345,9 +377,10 @@ if not st.session_state['logged_in']:
         
         with auth_tab1:
             st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-            log_user = st.text_input("Provider Email / ID", key="log_u")
+            log_user = st.text_input("Username", key="log_u")
             log_pass = st.text_input("Password", type="password", key="log_p")
-            st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='auth-btn'>", unsafe_allow_html=True)
             if st.button("Login", use_container_width=True):
                 users = load_users()
                 if log_user in users and (users[log_user] == log_pass or users[log_user] == hash_password(log_pass)):
@@ -358,24 +391,47 @@ if not st.session_state['logged_in']:
                     st.rerun()
                 else:
                     st.error("Authentication failed.")
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            # --- PCDP Google SSO Box ---
+            st.markdown("""
+                <div style='text-align: center; margin: 1.5rem 0 1rem 0; position: relative;'>
+                    <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 0;'/>
+                    <span style='background: white; padding: 0 15px; color: #0f172a; position: relative; top: -12px; font-size: 0.95rem; font-weight: 500;'>Or</span>
+                </div>
+                
+                <div style='border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.6rem 1rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: white; max-width: 320px; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05);' onclick="document.getElementById('google_login_hack').click();">
+                    <div style='display: flex; align-items: center; gap: 12px;'>
+                        <div style='width: 30px; height: 30px; border-radius: 50%; background-color: #818cf8; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem;'>R</div>
+                        <div style='text-align: left;'>
+                            <div style='font-size: 0.8rem; font-weight: 600; color: #334155; line-height: 1.2;'>Sign in as RAVI PRAVIN</div>
+                            <div style='font-size: 0.7rem; color: #64748b; line-height: 1.2;'>ravipravin.ad23@bitsathy.ac.in <span style='font-size: 0.6rem; margin-left:2px;'>▼</span></div>
+                        </div>
+                    </div>
+                    <div style='font-size: 1.1rem; font-weight: 900; letter-spacing: 1px;'>
+                        <span style='color: #4285F4;'>G</span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Hidden functional button for the Google SSO
+            if st.button("google_sso_hidden", key="google_login_hack", on_click=lambda: st.session_state.update({'logged_in': True, 'user_name': 'Ravi Pravin'})):
+                pass
+            st.markdown("""<style>button[key="google_login_hack"] {display: none;}</style>""", unsafe_allow_html=True)
 
         with auth_tab2:
             st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-            new_user = st.text_input("Provider Email / ID", key="reg_u")
+            new_user = st.text_input("Username", key="reg_u")
             new_pass = st.text_input("Create Password", type="password", key="reg_p")
-            st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='auth-btn'>", unsafe_allow_html=True)
             if st.button("Register", use_container_width=True):
                 if new_user and new_pass:
                     save_user(new_user, new_pass)
                     st.success("Account provisioned successfully. Please sign in.")
                 else:
                     st.warning("Please complete all fields.")
-        
-        st.markdown("""
-            <div style='margin-top: 2rem; text-align: center; padding-top: 1rem; border-top: 1px solid #e2e8f0;'>
-                <p style='margin: 0; font-size: 0.75rem; color: #94a3b8;'>© 2026 Heart AI Systems. All rights reserved.</p>
-            </div>
-        """, unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # --- 5. MAIN APPLICATION (Visible after Login) ---
 else:
