@@ -462,9 +462,7 @@ else:
         st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
         analyze_btn = st.button("INITIATE DIAGNOSTIC ANALYSIS", use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Move the analysis trigger outside the div
-        if analyze_btn:
+                if analyze_btn:
             # Load Model
             try:
                 model, scaler, features = load_models()
@@ -495,116 +493,120 @@ else:
             }
             disease_name = disease_map.get(prediction, 'Unknown')
 
+            # Update Session State for Persistence
+            st.session_state['last_prediction'] = prediction
+            st.session_state['last_prob'] = prob
+            st.session_state['last_disease'] = disease_name
+            st.session_state['last_vitals'] = (age, chol, trestbps, thalach, oldpeak, weight)
+
             # --- Save to Patient History Database ---
             save_patient_record(
                 st.session_state['user_name'], age, sex, cp, trestbps, chol, fbs, restecg, 
                 thalach, exang, oldpeak, slope, ca, thal, weight, disease_name, prob
             )
 
-        # --- Send to n8n → n8n emails the patient ---
-        if patient_email:
-            try:
-                payload = {
-                    "patient_email": patient_email,
-                    "patient_age": age,
-                    "patient_weight": weight,
-                    "blood_pressure": trestbps,
-                    "cholesterol": chol,
-                    "risk_probability": f"{prob*100:.2f}%",
-                    "disease_type": disease_name,
-                    "diagnosed_by": st.session_state['user_name']
-                }
-                response = requests.post(n8n_webhook_url, json=payload, timeout=4)
-                if response.status_code == 200:
-                    st.success(f"✅ Diagnostic report sent to **{patient_email}** via n8n!")
+            # --- Send to n8n → n8n emails the patient ---
+            if patient_email:
+                try:
+                    payload = {
+                        "patient_email": patient_email,
+                        "patient_age": age,
+                        "patient_weight": weight,
+                        "blood_pressure": trestbps,
+                        "cholesterol": chol,
+                        "risk_probability": f"{prob*100:.2f}%",
+                        "disease_type": disease_name,
+                        "diagnosed_by": st.session_state['user_name']
+                    }
+                    response = requests.post(n8n_webhook_url, json=payload, timeout=4)
+                    if response.status_code == 200:
+                        st.success(f"✅ Diagnostic report sent to **{patient_email}** via n8n!")
+                    else:
+                        st.warning(f"⚠️ n8n responded with status {response.status_code}")
+                except Exception:
+                    st.info("💡 n8n not reachable — configure the webhook URL in the sidebar.")
+        
+        # --- Results Display (Persistent) ---
+        if 'last_prediction' in st.session_state:
+            prediction = st.session_state['last_prediction']
+            prob = st.session_state['last_prob']
+            disease_name = st.session_state['last_disease']
+            age, chol, trestbps, thalach, oldpeak, weight = st.session_state['last_vitals']
+
+            st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
+            st.subheader("Diagnostic Summary & Analysis")
+            
+            # Vital Signs Metrics
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Cholesterol", f"{chol} mg/dl", delta="High" if chol > 200 else "Stable", delta_color="inverse" if chol > 200 else "normal")
+            m2.metric("Systemic BP", f"{trestbps} mmHg", delta="Elevated" if trestbps > 130 else "Stable", delta_color="inverse" if trestbps > 130 else "normal")
+            m3.metric("Heart Rate", f"{thalach} bpm")
+            
+            st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
+            
+            # Prediction Results
+            res_col, advice_col = st.columns([1, 1])
+            with res_col:
+                if prediction > 0:
+                    st.error(f"### AI FINDING: {disease_name}")
                 else:
-                    st.warning(f"⚠️ n8n responded with status {response.status_code}")
-            except Exception:
-                st.info("💡 n8n not reachable — configure the webhook URL in the sidebar.")
-        
-        # --- Results Display ---
-        st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
-        st.subheader("Diagnostic Summary & Analysis")
-        
-        # Vital Signs Metrics
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Cholesterol", f"{chol} mg/dl", delta="High" if chol > 200 else "Stable", delta_color="inverse" if chol > 200 else "normal")
-        m2.metric("Systemic BP", f"{trestbps} mmHg", delta="Elevated" if trestbps > 130 else "Stable", delta_color="inverse" if trestbps > 130 else "normal")
-        m3.metric("Heart Rate", f"{thalach} bpm")
-        
-        st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
-        
-        # Prediction Results
-        res_col, advice_col = st.columns([1, 1])
-        with res_col:
-            if prediction > 0:
-                st.error(f"### AI FINDING: {disease_name}")
-            else:
-                st.success(f"### AI FINDING: {disease_name}")
-            
-            fig_gauge = go.Figure(go.Indicator(
-                mode = "gauge+number",
-                value = prob * 100,
-                title = {'text': "Analysis Confidence (%)", 'font': {'size': 16}},
-                gauge = {
-                    'axis': {'range': [None, 100]},
-                    'bar': {'color': "#1e40af" if prediction == 0 else "#be123c"},
-                    'steps': [
-                        {'range': [0, 40], 'color': "#f1f5f9"},
-                        {'range': [40, 70], 'color': "#cbd5e1"},
-                        {'range': [70, 100], 'color': "#94a3b8"}
-                    ]
-                }
-            ))
-            fig_gauge.update_layout(height=250, margin=dict(l=20, r=20, t=50, b=20), paper_bgcolor="rgba(0,0,0,0)")
-            st.plotly_chart(fig_gauge, use_container_width=True)
+                    st.success(f"### AI FINDING: {disease_name}")
+                
+                fig_gauge = go.Figure(go.Indicator(
+                    mode = "gauge+number",
+                    value = prob * 100,
+                    title = {'text': "Analysis Confidence (%)", 'font': {'size': 16}},
+                    gauge = {
+                        'axis': {'range': [None, 100]},
+                        'bar': {'color': "#1e40af" if prediction == 0 else "#be123c"},
+                        'steps': [
+                            {'range': [0, 40], 'color': "#f1f5f9"},
+                            {'range': [40, 70], 'color': "#cbd5e1"},
+                            {'range': [70, 100], 'color': "#94a3b8"}
+                        ]
+                    }
+                ))
+                fig_gauge.update_layout(height=250, margin=dict(l=20, r=20, t=50, b=20), paper_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig_gauge, use_container_width=True)
 
-        with advice_col:
-            st.markdown("##### Clinical Guidance")
-            advice = {
-                0: ("st.info", "Maintenance Planning", "Standard heart-healthy protocols recommended."),
-                1: ("st.warning", "CAD Management", "Mediterranean diet and lipid profile tracking advised."),
-                2: ("st.error", "Acute MI Protocol", "Urgent clinical intervention and ECG required."),
-                3: ("st.warning", "Electrophysiology Advice", "Holter monitoring suggested for rhythm analysis."),
-                4: ("st.error", "HF Management", "Immediate echocardiogram and fluid monitoring required."),
-                5: ("st.warning", "Valvular Monitoring", "Follow-up echo to assess hemodynamic impact."),
-                # ... (rest of advice mapping is the same, simplified for UI)
-            }
-            # (Just for brevity in this replace, I'll keep the logic similar but styled)
-            st.info(f"**Action Plan for {disease_name}**\n\nConsult the generated PDF for detailed diet and medication guidelines based on this risk profile.")
-            
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        # --- Radar & Factors ---
-        c_radar, c_factors = st.columns(2)
-        with c_radar:
-            st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
-            st.markdown("##### biomarker Profile Visualization")
-            categories = ['Age', 'BP', 'Chol', 'HR', 'ST Dep', 'Weight']
-            patient_values = [min(100, (age/100)*100), min(100, (trestbps/200)*100), min(100, (chol/400)*100), min(100, (thalach/200)*100), min(100, (oldpeak/6)*100), min(100, (weight/150)*100)]
-            fig_radar = go.Figure()
-            fig_radar.add_trace(go.Scatterpolar(r=patient_values, theta=categories, fill='toself', name='Patient', line_color='#2563eb', fillcolor='rgba(37, 99, 235, 0.2)'))
-            fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False, range=[0, 100])), height=300, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor="rgba(0,0,0,0)")
-            st.plotly_chart(fig_radar, use_container_width=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-            
-        with c_factors:
-            st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
-            st.markdown("##### Key Decision Drivers")
-            importances = model.feature_importances_
-            feat_importances = pd.Series(importances, index=features).nlargest(5)
-            fig_bar = px.bar(x=feat_importances.values, y=feat_importances.index, orientation='h', color_discrete_sequence=['#2563eb'])
-            fig_bar.update_layout(height=300, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", yaxis={'categoryorder':'total ascending'})
-            st.plotly_chart(fig_bar, use_container_width=True)
+            with advice_col:
+                st.markdown("##### Clinical Guidance")
+                st.info(f"**Action Plan for {disease_name}**\n\nConsult the generated PDF for detailed diet and medication guidelines based on this risk profile.")
+                
             st.markdown("</div>", unsafe_allow_html=True)
 
-        st.download_button(
-            label="GENERATE MEDICAL REPORT (PDF)",
-            data=pdf_bytes,
-            file_name=f"Report_{age}_{st.session_state['user_name']}.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+            # --- Radar & Factors ---
+            c_radar, c_factors = st.columns(2)
+            with c_radar:
+                st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
+                st.markdown("##### biomarker Profile Visualization")
+                categories = ['Age', 'BP', 'Chol', 'HR', 'ST Dep', 'Weight']
+                patient_values = [min(100, (age/100)*100), min(100, (trestbps/200)*100), min(100, (chol/400)*100), min(100, (thalach/200)*100), min(100, (oldpeak/6)*100), min(100, (weight/150)*100)]
+                fig_radar = go.Figure()
+                fig_radar.add_trace(go.Scatterpolar(r=patient_values, theta=categories, fill='toself', name='Patient', line_color='#2563eb', fillcolor='rgba(37, 99, 235, 0.2)'))
+                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False, range=[0, 100])), height=300, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig_radar, use_container_width=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+                
+            with c_factors:
+                st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
+                st.markdown("##### Key Decision Drivers")
+                model, _, features = load_models()
+                importances = model.feature_importances_
+                feat_importances = pd.Series(importances, index=features).nlargest(5)
+                fig_bar = px.bar(x=feat_importances.values, y=feat_importances.index, orientation='h', color_discrete_sequence=['#2563eb'])
+                fig_bar.update_layout(height=300, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", yaxis={'categoryorder':'total ascending'})
+                st.plotly_chart(fig_bar, use_container_width=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            pdf_bytes = create_pdf(st.session_state['user_name'], prediction, prob, age, chol, trestbps, weight)
+            st.download_button(
+                label="GENERATE MEDICAL REPORT (PDF)",
+                data=pdf_bytes,
+                file_name=f"Report_{age}_{st.session_state['user_name']}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
 
     # ==========================================
     # PAGE 2: 📈 CLINIC DASHBOARD
