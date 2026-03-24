@@ -172,71 +172,78 @@ st.markdown("""
     h1, h2, h3 {
         font-family: 'Outfit', sans-serif !important;
         font-weight: 700 !important;
-        color: #0f172a !important;
-        letter-spacing: -0.02em;
+        color: #111827 !important;
+        letter-spacing: -0.025em;
     }
 
-    /* Custom Card Container */
+    /* Custom Card Container - Modern B2B SaaS */
     .clinical-card {
         background-color: #ffffff;
-        padding: 1.5rem;
+        padding: 1.75rem;
         border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        border: 1px solid #e5e7eb;
         margin-bottom: 1.5rem;
+        transition: box-shadow 0.2s ease-in-out;
+    }
+    .clinical-card:hover {
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     }
 
-    /* Sidebar: force professional white/slate mix */
+    /* Sidebar: clean enterprise look */
     section[data-testid="stSidebar"] {
         background-color: #ffffff !important;
-        border-right: 1px solid #e2e8f0;
+        border-right: 1px solid #e5e7eb;
     }
     section[data-testid="stSidebar"] * {
-        color: #334155 !important;
+        color: #4b5563 !important;
     }
 
-    /* All text inputs: force light background with subtle focus */
+    /* All text inputs: sharp borders, clear focus */
     input, textarea, [data-baseweb="input"] input,
     [data-baseweb="base-input"] {
         background-color: #ffffff !important;
-        color: #1e293b !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 8px !important;
-        padding: 0.5rem !important;
+        color: #1f2937 !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.95rem !important;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     }
     input:focus {
-        border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
     }
 
     /* Selectbox / dropdown */
     [data-baseweb="select"] > div {
         background-color: #ffffff !important;
-        color: #1e293b !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 8px !important;
+        color: #1f2937 !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     }
 
     /* Labels */
     .stTextInput label, .stSelectbox label, .stSlider label,
     .stNumberInput label, label, p, span {
-        color: #475569 !important;
+        color: #374151 !important;
         font-weight: 500 !important;
-        font-size: 0.95rem !important;
+        font-size: 0.875rem !important;
     }
 
-    /* Tabs: force readable text */
+    /* Tabs: muted to active clear transition */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 12px;
+        gap: 16px;
         background-color: transparent !important;
-        border-bottom: 1px solid #e2e8f0;
+        border-bottom: 1px solid #e5e7eb;
     }
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px 8px 0 0;
-        font-weight: 600;
-        color: #64748b !important;
+        border-radius: 6px 6px 0 0;
+        font-weight: 500;
+        color: #6b7280 !important;
         background-color: transparent !important;
-        padding: 0.75rem 1rem;
+        padding: 0.5rem 0.25rem;
     }
     .stTabs [aria-selected="true"] {
         color: #2563eb !important;
@@ -245,53 +252,57 @@ st.markdown("""
 
     /* Metric values */
     [data-testid="stMetricValue"] {
-        color: #0f172a !important;
+        color: #111827 !important;
         font-weight: 700 !important;
         font-family: 'Outfit', sans-serif !important;
     }
     [data-testid="stMetricLabel"] {
-        color: #64748b !important;
+        color: #6b7280 !important;
         font-weight: 600 !important;
         text-transform: uppercase;
         font-size: 0.75rem !important;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.025em;
     }
 
-    /* Primary action buttons */
+    /* Primary action buttons - SaaS style CTA */
     .stButton > button {
-        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+        background-color: #2563eb !important; /* Solid blue, no gradient for cleaner look */
         color: white !important;
-        border: none !important;
-        border-radius: 8px;
-        padding: 0.7rem 1.5rem;
-        font-weight: 600;
-        font-size: 1rem;
-        transition: all 0.2s ease;
-        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        border: 1px solid transparent !important;
+        border-radius: 6px;
+        padding: 0.625rem 1.25rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+        transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
     .stButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        background-color: #1d4ed8 !important; /* Darker blue */
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
         color: white !important;
+        transform: translateY(0px); /* Remove annoying bounce */
     }
 
-    /* Download button */
+    /* Download button - secondary SaaS style */
     .stDownloadButton > button {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        background-color: #10b981 !important;
         color: white !important;
-        border: none !important;
-        border-radius: 8px;
-        font-weight: 600;
+        border: 1px solid transparent !important;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 0.875rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
     .stDownloadButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+        background-color: #059669 !important;
+        transform: translateY(0px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         color: white !important;
     }
 
     /* Force main content area light */
     [data-testid="stMain"], [data-testid="block-container"] {
-        background-color: #f8fafc !important;
+        background-color: #f3f4f6 !important; /* Softer, slightly darker gray so cards pop more */
         padding-top: 2rem;
     }
 
@@ -299,7 +310,8 @@ st.markdown("""
     [data-testid="stExpander"] {
         border-radius: 8px !important;
         background-color: #ffffff !important;
-        border: 1px solid #e2e8f0 !important;
+        border: 1px solid #e5e7eb !important;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
     [data-testid="stExpander"] summary span {
         color: #0f172a !important;
@@ -312,20 +324,25 @@ st.markdown("""
 if not st.session_state['logged_in']:
     st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
     
-    _, auth_col, _ = st.columns([1, 1.5, 1])
+    _, auth_col, _ = st.columns([1, 1.2, 1])
     
     with auth_col:
-        st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
-        st.markdown("<h1 style='text-align:center; margin-bottom:0.5rem;'>Heart AI Portal</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align:center; color:#64748b; margin-bottom:2rem;'>Clinical Diagnostic Intelligence</p>", unsafe_allow_html=True)
+        st.markdown("<div class='clinical-card' style='padding: 2.5rem 2rem;'>", unsafe_allow_html=True)
+        st.markdown("""
+            <div style='text-align: center; margin-bottom: 2rem;'>
+                <h1 style='color: #111827; font-size: 1.875rem; margin-bottom: 0.5rem;'>Heart AI Workspace</h1>
+                <p style='color: #6b7280; font-size: 1rem; margin-top: 0;'>Clinical Diagnostic Intelligence Platform</p>
+            </div>
+        """, unsafe_allow_html=True)
         
-        auth_tab1, auth_tab2 = st.tabs(["🔒 Login", "📝 Register"])
+        auth_tab1, auth_tab2 = st.tabs(["Sign In", "Create Account"])
         
         with auth_tab1:
-            log_user = st.text_input("Username", key="log_u", placeholder="Enter your username")
+            st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+            log_user = st.text_input("Work Email / Username", key="log_u", placeholder="dr.smith@clinic.com")
             log_pass = st.text_input("Password", type="password", key="log_p", placeholder="••••••••")
-            st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-            if st.button("Access Dashboard", use_container_width=True):
+            st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
+            if st.button("Sign into Workspace", use_container_width=True):
                 users = load_users()
                 if log_user in users and (users[log_user] == log_pass or users[log_user] == hash_password(log_pass)):
                     if users[log_user] == log_pass:
@@ -334,19 +351,19 @@ if not st.session_state['logged_in']:
                     st.session_state['user_name'] = log_user
                     st.rerun()
                 else:
-                    st.error("Invalid credentials. Please try again.")
+                    st.error("Authentication failed. Please check your credentials.")
 
         with auth_tab2:
-            st.markdown("<p style='font-size: 0.9rem; color: #64748b;'>Create a professional account to access clinical tools.</p>", unsafe_allow_html=True)
-            new_user = st.text_input("Full Name / Username", key="reg_u", placeholder="e.g. Dr. Smith")
+            st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+            new_user = st.text_input("Provider Name", key="reg_u", placeholder="e.g. Dr. Sarah Chen")
             new_pass = st.text_input("Create Password", type="password", key="reg_p", placeholder="Minimum 8 characters")
-            st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-            if st.button("Create Account", use_container_width=True):
+            st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
+            if st.button("Initialize Account", use_container_width=True):
                 if new_user and new_pass:
                     save_user(new_user, new_pass)
-                    st.success("Registration successful! Please login.")
+                    st.success("Account provisioned successfully. Please sign in.")
                 else:
-                    st.warning("Please fill in all medical registration fields.")
+                    st.warning("Please complete all required fields.")
         st.markdown("</div>", unsafe_allow_html=True)
 
 # --- 5. MAIN APPLICATION (Visible after Login) ---
@@ -416,51 +433,53 @@ else:
                         except Exception as e: st.error(f"Error: {e}")
                 except Exception as e: st.error(f"Read Error: {e}")
 
-        st.markdown("### Patient Clinical Profile")
-        
-        # Form Container
+        st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+
+        # Build form in discrete cards
         st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
+        st.markdown("<h3 style='margin-top: 0;'>Patient Demographics & Vitals</h3>", unsafe_allow_html=True)
         
-        email_col, _ = st.columns([2, 1])
+        email_col, _ = st.columns([1.5, 1])
         with email_col:
             patient_email = st.text_input("Patient Notification Email", value="ravipravin2005@gmail.com", help="Report will be sent here.")
         
-        st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin: 1rem 0; border: 0; border-top: 1px solid #e5e7eb;' />", unsafe_allow_html=True)
         
         col_demo, col_vitals = st.columns(2)
         with col_demo:
-            st.markdown("##### 1. Demographics")
             age = st.number_input("Age (Years)", 1, 100, 45)
             sex = st.selectbox("Biological Sex", [1, 0], format_func=lambda x: "Male" if x==1 else "Female")
             weight = st.number_input("Weight (kg)", 10, 250, 70)
             
         with col_vitals:
-            st.markdown("##### 2. Vital Signs")
             trestbps = st.slider("Resting Systolic BP (mmHg)", 80, 250, 120)
             thalach = st.slider("Max Heart Rate (bpm)", 50, 250, 150)
-            
-        st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-        st.markdown("##### 3. Laboratory Findings")
+            st.markdown("<p style='font-size: 0.8rem; color: #6b7280;'>Ensure patient was resting for 5 mins before BP reading.</p>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
+        st.markdown("<h3 style='margin-top: 0;'>Laboratory Findings & ECG</h3>", unsafe_allow_html=True)
         l1, l2, l3 = st.columns(3)
         with l1:
             chol = st.slider("Serum Chol (mg/dl)", 100, 600, 200)
             fbs = st.selectbox("Fasting Blood Sugar > 120", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
         with l2:
-            restecg = st.selectbox("ECG Pattern", [0, 1, 2], help="0: Normal, 1: ST-T abnormal, 2: LVH")
             cp = st.selectbox("Chest Pain Type", [0, 1, 2, 3], help="0: Typical, 1: Atypical, 2: Non-anginal, 3: Asymptomatic")
-        with l3:
             exang = st.selectbox("Exercise Angina", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
+        with l3:
+            restecg = st.selectbox("ECG Pattern", [0, 1, 2], help="0: Normal, 1: ST-T abnormal, 2: LVH")
             oldpeak = st.slider("ST Depression", 0.0, 10.0, 1.0, 0.1)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-        st.markdown("##### 4. specialized Metrics")
+        st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
+        st.markdown("<h3 style='margin-top: 0;'>Specialized Metrics</h3>", unsafe_allow_html=True)
         s1, s2, s3 = st.columns(3)
         with s1: slope = st.selectbox("Peak ST Slope", [0, 1, 2])
         with s2: ca = st.selectbox("Fluoroscopy Vessels", [0, 1, 2, 3])
         with s3: thal = st.selectbox("Thal Status", [1, 2, 3])
-
-        st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
-        analyze_btn = st.button("INITIATE DIAGNOSTIC ANALYSIS", use_container_width=True)
+        
+        st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
+        analyze_btn = st.button("Analyze Clinical Profile", use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
         if analyze_btn:
             # Load Model
@@ -534,76 +553,116 @@ else:
             age, chol, trestbps, thalach, oldpeak, weight = st.session_state['last_vitals']
 
             st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
-            st.subheader("Diagnostic Summary & Analysis")
+            st.markdown("<h3 style='margin-top: 0; margin-bottom: 1.5rem;'>Diagnostic Summary & Analysis</h3>", unsafe_allow_html=True)
             
-            # Vital Signs Metrics
+            # Vital Signs Metrics in a sleek row
             m1, m2, m3 = st.columns(3)
-            m1.metric("Cholesterol", f"{chol} mg/dl", delta="High" if chol > 200 else "Stable", delta_color="inverse" if chol > 200 else "normal")
-            m2.metric("Systemic BP", f"{trestbps} mmHg", delta="Elevated" if trestbps > 130 else "Stable", delta_color="inverse" if trestbps > 130 else "normal")
-            m3.metric("Heart Rate", f"{thalach} bpm")
+            with m1:
+                st.metric("Serum Cholesterol", f"{chol} mg/dl", delta="Elevated" if chol > 200 else "Optimal", delta_color="inverse" if chol > 200 else "normal")
+            with m2:
+                st.metric("Systemic Blood Pressure", f"{trestbps} mmHg", delta="Elevated" if trestbps > 130 else "Optimal", delta_color="inverse" if trestbps > 130 else "normal")
+            with m3:
+                st.metric("Max Heart Rate", f"{thalach} bpm")
             
-            st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
+            st.markdown("<hr style='margin: 1.5rem 0; border: 0; border-top: 1px solid #e5e7eb;' />", unsafe_allow_html=True)
             
-            # Prediction Results
-            res_col, advice_col = st.columns([1, 1])
+            # Prediction Results & Gauge
+            res_col, advice_col = st.columns([1, 1.2])
             with res_col:
                 if prediction > 0:
-                    st.error(f"### AI FINDING: {disease_name}")
+                    st.error(f"### AI Finding: {disease_name}")
                 else:
-                    st.success(f"### AI FINDING: {disease_name}")
+                    st.success(f"### AI Finding: {disease_name}")
                 
                 fig_gauge = go.Figure(go.Indicator(
                     mode = "gauge+number",
                     value = prob * 100,
-                    title = {'text': "Analysis Confidence (%)", 'font': {'size': 16}},
+                    title = {'text': "Confidence Level", 'font': {'size': 14, 'color': '#6b7280'}},
+                    number = {'suffix': "%", 'font': {'size': 36, 'color': '#111827', 'family': 'Outfit'}},
                     gauge = {
-                        'axis': {'range': [None, 100]},
-                        'bar': {'color': "#1e40af" if prediction == 0 else "#be123c"},
+                        'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+                        'bar': {'color': "#2563eb" if prediction == 0 else "#ef4444"},
+                        'bgcolor': "white",
+                        'borderwidth': 0,
                         'steps': [
-                            {'range': [0, 40], 'color': "#f1f5f9"},
-                            {'range': [40, 70], 'color': "#cbd5e1"},
-                            {'range': [70, 100], 'color': "#94a3b8"}
+                            {'range': [0, 40], 'color': "#f3f4f6"},
+                            {'range': [40, 75], 'color': "#e5e7eb"},
+                            {'range': [75, 100], 'color': "#d1d5db"}
                         ]
                     }
                 ))
-                fig_gauge.update_layout(height=250, margin=dict(l=20, r=20, t=50, b=20), paper_bgcolor="rgba(0,0,0,0)")
+                fig_gauge.update_layout(height=220, margin=dict(l=10, r=10, t=40, b=10), paper_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_gauge, use_container_width=True)
 
             with advice_col:
-                st.markdown("##### Clinical Guidance")
-                st.info(f"**Action Plan for {disease_name}**\n\nConsult the generated PDF for detailed diet and medication guidelines based on this risk profile.")
+                st.markdown("<h4 style='color: #374151; margin-top: 0;'>Clinical Guidance Protocol</h4>", unsafe_allow_html=True)
+                if prediction > 0:
+                    st.warning(f"**Action Plan for {disease_name}**\n\nAutomated analysis indicates elevated risk factors. Consult the generated protocol PDF for detailed dietary, medicinal, and clinical follow-up guidelines specific to this risk profile.")
+                else:
+                    st.info(f"**Action Plan for {disease_name}**\n\nAutomated analysis indicates baseline health metrics. Standard cardiovascular preventative measures are recommended.")
                 
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # --- Radar & Factors ---
+            # --- Radar & Factors in two clean cards ---
             c_radar, c_factors = st.columns(2)
             with c_radar:
-                st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
-                st.markdown("##### biomarker Profile Visualization")
+                st.markdown("<div class='clinical-card' style='height: 100%;'>", unsafe_allow_html=True)
+                st.markdown("<h4 style='margin-top: 0;'>Biomarker Profile Visualization</h4>", unsafe_allow_html=True)
                 categories = ['Age', 'BP', 'Chol', 'HR', 'ST Dep', 'Weight']
                 patient_values = [min(100, (age/100)*100), min(100, (trestbps/200)*100), min(100, (chol/400)*100), min(100, (thalach/200)*100), min(100, (oldpeak/6)*100), min(100, (weight/150)*100)]
                 fig_radar = go.Figure()
-                fig_radar.add_trace(go.Scatterpolar(r=patient_values, theta=categories, fill='toself', name='Patient', line_color='#2563eb', fillcolor='rgba(37, 99, 235, 0.2)'))
-                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False, range=[0, 100])), height=300, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor="rgba(0,0,0,0)")
+                fig_radar.add_trace(go.Scatterpolar(
+                    r=patient_values, 
+                    theta=categories, 
+                    fill='toself', 
+                    name='Patient', 
+                    line_color='#2563eb', 
+                    fillcolor='rgba(37, 99, 235, 0.15)'
+                ))
+                fig_radar.update_layout(
+                    polar=dict(
+                        radialaxis=dict(visible=False, range=[0, 100]),
+                        angularaxis=dict(gridcolor='#e5e7eb', linecolor='#e5e7eb')
+                    ), 
+                    height=280, 
+                    margin=dict(l=20, r=20, t=20, b=20), 
+                    paper_bgcolor="rgba(0,0,0,0)"
+                )
                 st.plotly_chart(fig_radar, use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
                 
             with c_factors:
-                st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
-                st.markdown("##### Key Decision Drivers")
+                st.markdown("<div class='clinical-card' style='height: 100%;'>", unsafe_allow_html=True)
+                st.markdown("<h4 style='margin-top: 0;'>Key Predictive Drivers</h4>", unsafe_allow_html=True)
                 model, _, features = load_models()
                 importances = model.feature_importances_
                 feat_importances = pd.Series(importances, index=features).nlargest(5)
-                fig_bar = px.bar(x=feat_importances.values, y=feat_importances.index, orientation='h', color_discrete_sequence=['#2563eb'])
-                fig_bar.update_layout(height=300, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", yaxis={'categoryorder':'total ascending'})
+                fig_bar = px.bar(
+                    x=feat_importances.values, 
+                    y=feat_importances.index, 
+                    orientation='h', 
+                    color_discrete_sequence=['#2563eb']
+                )
+                fig_bar.update_layout(
+                    height=280, 
+                    margin=dict(l=20, r=20, t=20, b=20), 
+                    paper_bgcolor="rgba(0,0,0,0)", 
+                    plot_bgcolor="rgba(0,0,0,0)", 
+                    yaxis={'categoryorder':'total ascending'},
+                    xaxis_title="Influence Score",
+                    yaxis_title=""
+                )
+                fig_bar.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#e5e7eb', zeroline=False)
+                fig_bar.update_yaxes(showgrid=False)
                 st.plotly_chart(fig_bar, use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
+            st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
             pdf_bytes = create_pdf(st.session_state['user_name'], prediction, prob, age, chol, trestbps, weight)
             st.download_button(
-                label="GENERATE MEDICAL REPORT (PDF)",
+                label="Generate Official Medical Report (PDF)",
                 data=pdf_bytes,
-                file_name=f"Report_{age}_{st.session_state['user_name']}.pdf",
+                file_name=f"Clinical_Report_{st.session_state['user_name'].replace(' ', '_')}.pdf",
                 mime="application/pdf",
                 use_container_width=True
             )
@@ -613,28 +672,40 @@ else:
     # ==========================================
     elif menu_selection == "📈 Patient Dashboard":
         st.title("Clinic Insights Dashboard")
-        st.markdown("<p style='color:#64748b; margin-top:-1rem;'>Real-time clinical metrics and screening volume.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#6b7280; font-size: 1.1rem; margin-top:-1rem;'>Real-time clinical metrics and screening volume.</p>", unsafe_allow_html=True)
         
         st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
+        st.markdown("<h4 style='margin-top: 0; margin-bottom: 1rem;'>Practice KPI Overview</h4>", unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
-        c1.metric("Total Screenings", "1,204", "+15 total")
-        c2.metric("High-Risk Cases", "241", "19.8% rate")
-        c3.metric("Avg. Assessment", "4.2m", "-30s avg")
+        c1.metric("Total Screenings", "1,204", "+15 this week")
+        c2.metric("High-Risk Cases Identified", "241", "19.8% detection rate")
+        c3.metric("Avg. Assessment Time", "4.2m", "-30s improvement")
         st.markdown("</div>", unsafe_allow_html=True)
         
         st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
-        st.subheader("Monthly Screening Trends")
+        st.markdown("<h4 style='margin-top: 0;'>Monthly Screening Trends</h4>", unsafe_allow_html=True)
         months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
         screenings = [120, 150, 180, 170, 210, 190]
-        fig_line = px.line(x=months, y=screenings, labels={'x': 'Month', 'y': 'Screenings'}, markers=True, color_discrete_sequence=['#2563eb'])
-        fig_line.update_layout(height=350, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+        fig_line = px.line(x=months, y=screenings, markers=True, color_discrete_sequence=['#2563eb'])
+        fig_line.update_layout(
+            height=350, 
+            margin=dict(l=20, r=20, t=20, b=20), 
+            paper_bgcolor="rgba(0,0,0,0)", 
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis_title="Month",
+            yaxis_title="Total Assessments"
+        )
+        fig_line.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#e5e7eb')
+        fig_line.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#e5e7eb', zeroline=False)
         st.plotly_chart(fig_line, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
+    # ==========================================
+    # PAGE 3: 📂 PATIENT HISTORY
+    # ==========================================
     elif menu_selection == "📂 Patient History":
         st.title("Digital Health Records")
-        st.markdown(f"<p style='color:#64748b; margin-top:-1rem;'>Accessing secure records for Dr. {st.session_state['user_name']}</p>", unsafe_allow_html=True)
-        
+        st.markdown(f"<p style='color:#6b7280; font-size: 1.1rem; margin-top:-1rem;'>Secure access to diagnostic history for Dr. {st.session_state['user_name']}</p>", unsafe_allow_html=True)
         conn = sqlite3.connect(PATIENTS_DB)
         history_df = pd.read_sql_query("SELECT timestamp, age, sex, weight, trestbps, chol, prediction_str, probability FROM patients WHERE doctor_name = ? ORDER BY timestamp DESC", conn, params=(st.session_state['user_name'],))
         conn.close()
