@@ -338,8 +338,8 @@ if not st.session_state['logged_in']:
         
         with auth_tab1:
             st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-            log_user = st.text_input("Provider Email / ID", key="log_u", placeholder="dr.smith@clinic.com")
-            log_pass = st.text_input("Password", type="password", key="log_p", placeholder="••••••••")
+            log_user = st.text_input("Provider Email / ID", key="log_u")
+            log_pass = st.text_input("Password", type="password", key="log_p")
             st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
             if st.button("Secure Login", use_container_width=True):
                 users = load_users()
@@ -351,17 +351,11 @@ if not st.session_state['logged_in']:
                     st.rerun()
                 else:
                     st.error("Authentication failed.")
-            
-            st.markdown("""
-                <div style='text-align: center; margin-top: 1.5rem;'>
-                    <p style='font-size: 0.8rem; color: #64748b;'>By securely logging in, you agree to our <span style='color: #02aadb; cursor: pointer;'>Terms of Service</span></p>
-                </div>
-            """, unsafe_allow_html=True)
 
         with auth_tab2:
             st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-            new_user = st.text_input("Provider Email / ID", key="reg_u", placeholder="e.g. dr.smith@clinic.com")
-            new_pass = st.text_input("Create Password", type="password", key="reg_p", placeholder="Minimum 8 characters")
+            new_user = st.text_input("Provider Email / ID", key="reg_u")
+            new_pass = st.text_input("Create Password", type="password", key="reg_p")
             st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
             if st.button("Create Provider Account", use_container_width=True):
                 if new_user and new_pass:
