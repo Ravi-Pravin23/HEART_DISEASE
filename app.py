@@ -465,41 +465,41 @@ else:
         
         # Move the analysis trigger outside the div
         if analyze_btn:
-        # Load Model
-        try:
-            model, scaler, features = load_models()
-        except:
-            st.error("Error: Model files missing. Please run 'python src/train.py' first.")
-            st.stop()
+            # Load Model
+            try:
+                model, scaler, features = load_models()
+            except:
+                st.error("Error: Model files missing. Please run 'python src/train.py' first.")
+                st.stop()
 
-        # Data Processing
-        input_data = np.array([[age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight]])
-        scaled_input = scaler.transform(input_data)
-        prediction = int(model.predict(scaled_input)[0])
-        prob = float(model.predict_proba(scaled_input)[0][prediction])
+            # Data Processing
+            input_data = np.array([[age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight]])
+            scaled_input = scaler.transform(input_data)
+            prediction = int(model.predict(scaled_input)[0])
+            prob = float(model.predict_proba(scaled_input)[0][prediction])
 
-        disease_map = {
-            0: 'Healthy / Low Risk',
-            1: 'Coronary Artery Disease (CAD)',
-            2: 'Heart Attack (Myocardial Infarction)',
-            3: 'Arrhythmia',
-            4: 'Heart Failure (Congestive)',
-            5: 'Heart Valve Disease',
-            6: 'Cardiomyopathy',
-            7: 'Congenital Heart Defects',
-            8: 'Pericarditis',
-            9: 'Myocarditis',
-            10: 'Endocarditis',
-            11: 'Aortic Aneurysm',
-            12: 'Peripheral Artery Disease (PAD)'
-        }
-        disease_name = disease_map.get(prediction, 'Unknown')
+            disease_map = {
+                0: 'Healthy / Low Risk',
+                1: 'Coronary Artery Disease (CAD)',
+                2: 'Heart Attack (Myocardial Infarction)',
+                3: 'Arrhythmia',
+                4: 'Heart Failure (Congestive)',
+                5: 'Heart Valve Disease',
+                6: 'Cardiomyopathy',
+                7: 'Congenital Heart Defects',
+                8: 'Pericarditis',
+                9: 'Myocarditis',
+                10: 'Endocarditis',
+                11: 'Aortic Aneurysm',
+                12: 'Peripheral Artery Disease (PAD)'
+            }
+            disease_name = disease_map.get(prediction, 'Unknown')
 
-        # --- Save to Patient History Database ---
-        save_patient_record(
-            st.session_state['user_name'], age, sex, cp, trestbps, chol, fbs, restecg, 
-            thalach, exang, oldpeak, slope, ca, thal, weight, disease_name, prob
-        )
+            # --- Save to Patient History Database ---
+            save_patient_record(
+                st.session_state['user_name'], age, sex, cp, trestbps, chol, fbs, restecg, 
+                thalach, exang, oldpeak, slope, ca, thal, weight, disease_name, prob
+            )
 
         # --- Send to n8n → n8n emails the patient ---
         if patient_email:
