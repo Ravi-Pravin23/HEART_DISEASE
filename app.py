@@ -151,7 +151,7 @@ st.set_page_config(page_title="Heart AI Clinical Portal", page_icon="⚕️", la
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
     /* Force light color scheme for all browsers */
     :root {
@@ -159,35 +159,39 @@ st.markdown("""
     }
 
     html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Poppins', sans-serif;
         color: #1e293b !important;
     }
 
-    /* Force light background on the entire app */
+    /* Soft cool gray/blue background matching reference */
     .stApp {
-        background-color: #f8fafc !important;
+        background-color: #f4f7fb !important;
+    }
+    [data-testid="stMain"], [data-testid="block-container"] {
+        background-color: #f4f7fb !important; 
+        padding-top: 1rem;
     }
 
-    /* Professional Headers */
-    h1, h2, h3 {
-        font-family: 'Outfit', sans-serif !important;
-        font-weight: 700 !important;
+    /* Clean Poppins Headers */
+    h1, h2, h3, h4, h5 {
+        font-family: 'Poppins', sans-serif !important;
+        font-weight: 600 !important;
         color: #111827 !important;
-        letter-spacing: -0.025em;
+        letter-spacing: -0.01em;
     }
 
-    /* Custom Card Container - Modern B2B SaaS */
+    /* Custom Card Container - PCDP Style */
     .clinical-card {
         background-color: #ffffff;
         padding: 1.75rem;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        border: none;
         margin-bottom: 1.5rem;
         transition: box-shadow 0.2s ease-in-out;
     }
     .clinical-card:hover {
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
     }
 
     /* Sidebar: clean enterprise look */
@@ -197,6 +201,7 @@ st.markdown("""
     }
     section[data-testid="stSidebar"] * {
         color: #4b5563 !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
 
     /* All text inputs: sharp borders, clear focus */
@@ -204,118 +209,112 @@ st.markdown("""
     [data-baseweb="base-input"] {
         background-color: #ffffff !important;
         color: #1f2937 !important;
-        border: 1px solid #d1d5db !important;
-        border-radius: 6px !important;
-        padding: 0.5rem 0.75rem !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        padding: 0.6rem 0.8rem !important;
         font-size: 0.95rem !important;
-        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        box-shadow: none !important;
     }
     input:focus {
-        border-color: #2563eb !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+        border-color: #02aadb !important;
+        box-shadow: 0 0 0 3px rgba(2, 170, 219, 0.15) !important;
     }
 
     /* Selectbox / dropdown */
     [data-baseweb="select"] > div {
         background-color: #ffffff !important;
         color: #1f2937 !important;
-        border: 1px solid #d1d5db !important;
-        border-radius: 6px !important;
-        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        box-shadow: none !important;
     }
 
     /* Labels */
     .stTextInput label, .stSelectbox label, .stSlider label,
     .stNumberInput label, label, p, span {
-        color: #374151 !important;
+        color: #475569 !important;
         font-weight: 500 !important;
-        font-size: 0.875rem !important;
+        font-size: 0.9rem !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
 
-    /* Tabs: muted to active clear transition */
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 16px;
         background-color: transparent !important;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 2px solid #e2e8f0;
     }
     .stTabs [data-baseweb="tab"] {
-        border-radius: 6px 6px 0 0;
+        border-radius: 8px 8px 0 0;
         font-weight: 500;
-        color: #6b7280 !important;
+        color: #64748b !important;
         background-color: transparent !important;
-        padding: 0.5rem 0.25rem;
+        padding: 0.5rem 0.5rem;
     }
     .stTabs [aria-selected="true"] {
-        color: #2563eb !important;
-        border-bottom: 2px solid #2563eb !important;
+        color: #02aadb !important;
+        border-bottom: 2px solid #02aadb !important;
     }
 
     /* Metric values */
     [data-testid="stMetricValue"] {
         color: #111827 !important;
-        font-weight: 700 !important;
-        font-family: 'Outfit', sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 2rem !important;
     }
     [data-testid="stMetricLabel"] {
-        color: #6b7280 !important;
-        font-weight: 600 !important;
-        text-transform: uppercase;
-        font-size: 0.75rem !important;
-        letter-spacing: 0.025em;
+        color: #64748b !important;
+        font-weight: 500 !important;
+        text-transform: none;
+        font-size: 0.85rem !important;
     }
 
-    /* Primary action buttons - SaaS style CTA */
+    /* Primary action buttons - PCDP Blue CTA */
     .stButton > button {
-        background-color: #2563eb !important; /* Solid blue, no gradient for cleaner look */
+        background-color: #02aadb !important; 
         color: white !important;
-        border: 1px solid transparent !important;
-        border-radius: 6px;
+        border: none !important;
+        border-radius: 8px;
         padding: 0.625rem 1.25rem;
         font-weight: 500;
-        font-size: 0.875rem;
-        transition: background-color 0.2s ease, box-shadow 0.2s ease;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        font-size: 0.95rem;
+        font-family: 'Poppins', sans-serif !important;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+        box-shadow: 0 4px 6px rgba(2, 170, 219, 0.2);
     }
     .stButton > button:hover {
-        background-color: #1d4ed8 !important; /* Darker blue */
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        background-color: #028eb8 !important; 
         color: white !important;
-        transform: translateY(0px); /* Remove annoying bounce */
+        transform: translateY(-1px); 
     }
 
-    /* Download button - secondary SaaS style */
+    /* Download button - Dr.Doctor Orange/Red CTA */
     .stDownloadButton > button {
-        background-color: #10b981 !important;
+        background-color: #f05b41 !important;
         color: white !important;
-        border: 1px solid transparent !important;
-        border-radius: 6px;
+        border: none !important;
+        border-radius: 8px;
         font-weight: 500;
-        font-size: 0.875rem;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        font-size: 0.95rem;
+        box-shadow: 0 4px 6px rgba(240, 91, 65, 0.2);
     }
     .stDownloadButton > button:hover {
-        background-color: #059669 !important;
-        transform: translateY(0px);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        background-color: #d14d35 !important;
+        transform: translateY(-1px);
         color: white !important;
-    }
-
-    /* Force main content area light */
-    [data-testid="stMain"], [data-testid="block-container"] {
-        background-color: #f3f4f6 !important; /* Softer, slightly darker gray so cards pop more */
-        padding-top: 2rem;
     }
 
     /* Expander header text */
     [data-testid="stExpander"] {
-        border-radius: 8px !important;
+        border-radius: 10px !important;
         background-color: #ffffff !important;
-        border: 1px solid #e5e7eb !important;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
     }
     [data-testid="stExpander"] summary span {
-        color: #0f172a !important;
-        font-weight: 600 !important;
+        color: #111827 !important;
+        font-weight: 500 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -327,22 +326,27 @@ if not st.session_state['logged_in']:
     _, auth_col, _ = st.columns([1, 1.2, 1])
     
     with auth_col:
-        st.markdown("<div class='clinical-card' style='padding: 2.5rem 2rem;'>", unsafe_allow_html=True)
         st.markdown("""
-            <div style='text-align: center; margin-bottom: 2rem;'>
-                <h1 style='color: #111827; font-size: 1.875rem; margin-bottom: 0.5rem;'>Heart AI Workspace</h1>
-                <p style='color: #6b7280; font-size: 1rem; margin-top: 0;'>Clinical Diagnostic Intelligence Platform</p>
+        <div class='clinical-card' style='padding: 0; overflow: hidden; max-width: 400px; margin: 0 auto;'>
+            <!-- Blue Header Block -->
+            <div style='background: linear-gradient(135deg, #028eb8 0%, #02aadb 100%); padding: 2rem 1rem; text-align: center; color: white;'>
+                <div style='font-size: 2.5rem; margin-bottom: 0.5rem;'>🩺</div>
+                <h2 style='color: white !important; font-family: "Poppins", sans-serif; margin: 0; font-size: 1.7rem;'>Doctor Portal</h2>
+                <p style='color: rgba(255,255,255,0.9); font-size: 0.9rem; margin-top: 5px; font-weight: 400;'>Secure Access to Medical Records</p>
             </div>
+            
+            <!-- White Content Block -->
+            <div style='padding: 2rem;'>
         """, unsafe_allow_html=True)
         
-        auth_tab1, auth_tab2 = st.tabs(["Sign In", "Create Account"])
+        auth_tab1, auth_tab2 = st.tabs(["Login", "Register"])
         
         with auth_tab1:
             st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-            log_user = st.text_input("Work Email / Username", key="log_u", placeholder="dr.smith@clinic.com")
-            log_pass = st.text_input("Password", type="password", key="log_p", placeholder="••••••••")
+            log_user = st.text_input("Username", key="log_u", placeholder="Enter your username")
+            log_pass = st.text_input("Password", type="password", key="log_p", placeholder="Enter your password")
             st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
-            if st.button("Sign into Workspace", use_container_width=True):
+            if st.button("🚪 Login", use_container_width=True):
                 users = load_users()
                 if log_user in users and (users[log_user] == log_pass or users[log_user] == hash_password(log_pass)):
                     if users[log_user] == log_pass:
@@ -351,37 +355,85 @@ if not st.session_state['logged_in']:
                     st.session_state['user_name'] = log_user
                     st.rerun()
                 else:
-                    st.error("Authentication failed. Please check your credentials.")
+                    st.error("Authentication failed.")
+            
+            st.markdown("""
+                <div style='text-align: center; margin-top: 1.5rem;'>
+                    <p style='font-size: 0.8rem; color: #64748b;'>By logging in, you agree to our <span style='color: #02aadb; cursor: pointer;'>Terms of Service</span></p>
+                </div>
+            """, unsafe_allow_html=True)
 
         with auth_tab2:
             st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-            new_user = st.text_input("Provider Name", key="reg_u", placeholder="e.g. Dr. Sarah Chen")
-            new_pass = st.text_input("Create Password", type="password", key="reg_p", placeholder="Minimum 8 characters")
+            new_user = st.text_input("New Username", key="reg_u", placeholder="Choose username")
+            new_pass = st.text_input("New Password", type="password", key="reg_p", placeholder="8+ characters")
             st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
-            if st.button("Initialize Account", use_container_width=True):
+            if st.button("Create Account", use_container_width=True):
                 if new_user and new_pass:
                     save_user(new_user, new_pass)
-                    st.success("Account provisioned successfully. Please sign in.")
+                    st.success("Account provisioned successfully.")
                 else:
-                    st.warning("Please complete all required fields.")
-        st.markdown("</div>", unsafe_allow_html=True)
+                    st.warning("Please complete all fields.")
+        
+        st.markdown("""
+            </div>
+            <!-- Footer -->
+            <div style='background-color: #f8fafc; padding: 1rem; text-align: center; border-top: 1px solid #e2e8f0;'>
+                <p style='margin: 0; font-size: 0.75rem; color: #94a3b8;'>© 2026 Heart AI Systems. All rights reserved.</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # --- 5. MAIN APPLICATION (Visible after Login) ---
 else:
-    # --- Sidebar Navigation Menu ---
-    st.sidebar.title(f"Dr. {st.session_state['user_name']}")
-    st.sidebar.markdown("---")
+    # --- Custom Top Navigation (Dr.Doctor Style) ---
+    st.markdown("""
+        <style>
+        /* Hide the default sidebar completely */
+        [data-testid="collapsedControl"] { display: none; }
+        section[data-testid="stSidebar"] { display: none; }
+        </style>
+    """, unsafe_allow_html=True)
     
-    menu_selection = st.sidebar.radio(
-        "Navigation Menu",
-        ["🩺 Diagnostic Assessment", "📈 Patient Dashboard", "📂 Patient History", "📊 Data Explorer"]
-    )
-    st.sidebar.markdown("---")
+    # Top Bar Layout
+    top_col1, top_col2, top_col3 = st.columns([1, 2, 1])
     
-    with st.sidebar.expander("⚙️ n8n Integration", expanded=False):
+    with top_col1:
+        st.markdown(f"""
+            <div style='display: flex; align-items: center; gap: 10px; padding-top: 5px;'>
+                <span style='font-size: 2rem; color: #f05b41;'>⚕️</span>
+                <span style='font-family: Poppins; font-weight: 700; font-size: 1.5rem; color: #02aadb;'>Heart AI</span>
+            </div>
+        """, unsafe_allow_html=True)
+        
+    with top_col2:
+        # We use a horizontal radio button styled to look like top nav links
+        menu_selection = st.radio(
+            "Navigation",
+            ["🩺 Assessment", "📈 Dashboard", "📂 Records", "⚙️ Settings"],
+            horizontal=True,
+            label_visibility="collapsed"
+        )
+        
+    with top_col3:
+        # Right aligned logout action matching the Orange Signup button style
+        st.markdown("<div style='text-align: right; padding-top: 5px;'>", unsafe_allow_html=True)
+        if st.button("Logout Session", use_container_width=False, key="logout_btn"):
+            st.session_state['logged_in'] = False
+            st.rerun()
+        st.markdown(f"<span style='font-size: 0.9rem; color: #64748b; margin-right: 15px;'>Dr. {st.session_state['user_name']}</span>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+    st.markdown("<hr style='margin-top: 5px; margin-bottom: 2rem; border: none; border-bottom: 1px solid #e2e8f0;'/>", unsafe_allow_html=True)
+
+    # --- SETTINGS / INTEGRATION PAGE ---
+    if menu_selection == "⚙️ Settings":
+        st.title("System Integration Settings")
+        st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
+        st.subheader("n8n Automated Alerts")
         n8n_webhook_url = st.text_input(
-            "Webhook URL",
-            value="http://localhost:5678/webhook/heart-alert",  # Production URL (after publishing)
+            "Webhook Endpoint URL",
+            value="http://localhost:5678/webhook/heart-alert",
             help="n8n webhook that receives patient data and sends the email."
         )
         if st.button("Test Connection", use_container_width=True):
@@ -393,16 +445,11 @@ else:
                     st.error(f"Reached n8n but got status: {res.status_code}")
             except Exception:
                 st.error("❌ Could not reach n8n. Make sure it's running.")
-
-    st.sidebar.markdown("---")
-    if st.sidebar.button("Logout", use_container_width=True):
-        st.session_state['logged_in'] = False
-        st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
     # PAGE 1: 🩺 DIAGNOSTIC ASSESSMENT
-    if menu_selection == "🩺 Diagnostic Assessment":
-        st.title("Cardiovascular Diagnostic Center")
-        st.markdown(f"<p style='color:#64748b; margin-top:-1rem;'>Clinician: Dr. {st.session_state['user_name']}</p>", unsafe_allow_html=True)
+    elif menu_selection == "🩺 Assessment":
+        st.title("Cardiovascular Assessment")
         
         # --- BATCH PROCESSING FEATURE ---
         with st.expander("📁 Batch Processing (CSV)", expanded=False):
