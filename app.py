@@ -462,7 +462,7 @@ else:
         st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
         analyze_btn = st.button("INITIATE DIAGNOSTIC ANALYSIS", use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
-                if analyze_btn:
+        if analyze_btn:
             # Load Model
             try:
                 model, scaler, features = load_models()
