@@ -520,7 +520,9 @@ else:
                 else:
                     st.warning(f"⚠️ n8n responded with status {response.status_code}")
             except Exception:
-                st.info("💡 n8n        # --- Results Display ---
+                st.info("💡 n8n not reachable — configure the webhook URL in the sidebar.")
+        
+        # --- Results Display ---
         st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
         st.subheader("Diagnostic Summary & Analysis")
         
