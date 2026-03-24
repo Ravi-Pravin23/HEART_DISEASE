@@ -327,26 +327,21 @@ if not st.session_state['logged_in']:
     
     with auth_col:
         st.markdown("""
-        <div class='clinical-card' style='padding: 0; overflow: hidden; max-width: 400px; margin: 0 auto;'>
-            <!-- Blue Header Block -->
-            <div style='background: linear-gradient(135deg, #028eb8 0%, #02aadb 100%); padding: 2rem 1rem; text-align: center; color: white;'>
+            <div style='background: linear-gradient(135deg, #028eb8 0%, #02aadb 100%); padding: 2.5rem 1rem; text-align: center; color: white; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(2, 170, 219, 0.2);'>
                 <div style='font-size: 2.5rem; margin-bottom: 0.5rem;'>🩺</div>
-                <h2 style='color: white !important; font-family: "Poppins", sans-serif; margin: 0; font-size: 1.7rem;'>Doctor Portal</h2>
-                <p style='color: rgba(255,255,255,0.9); font-size: 0.9rem; margin-top: 5px; font-weight: 400;'>Secure Access to Medical Records</p>
+                <h2 style='color: white !important; font-family: "Poppins", sans-serif; margin: 0; font-size: 1.8rem;'>Heart AI Portal</h2>
+                <p style='color: rgba(255,255,255,0.9); font-size: 0.95rem; margin-top: 5px; font-weight: 400;'>Secure Access to Medical Records</p>
             </div>
-            
-            <!-- White Content Block -->
-            <div style='padding: 2rem;'>
         """, unsafe_allow_html=True)
         
-        auth_tab1, auth_tab2 = st.tabs(["Login", "Register"])
+        auth_tab1, auth_tab2 = st.tabs(["Sign In", "Register Provider"])
         
         with auth_tab1:
-            st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-            log_user = st.text_input("Username", key="log_u", placeholder="Enter your username")
-            log_pass = st.text_input("Password", type="password", key="log_p", placeholder="Enter your password")
+            st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+            log_user = st.text_input("Provider Email / ID", key="log_u", placeholder="dr.smith@clinic.com")
+            log_pass = st.text_input("Password", type="password", key="log_p", placeholder="••••••••")
             st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
-            if st.button("🚪 Login", use_container_width=True):
+            if st.button("Secure Login", use_container_width=True):
                 users = load_users()
                 if log_user in users and (users[log_user] == log_pass or users[log_user] == hash_password(log_pass)):
                     if users[log_user] == log_pass:
@@ -359,29 +354,26 @@ if not st.session_state['logged_in']:
             
             st.markdown("""
                 <div style='text-align: center; margin-top: 1.5rem;'>
-                    <p style='font-size: 0.8rem; color: #64748b;'>By logging in, you agree to our <span style='color: #02aadb; cursor: pointer;'>Terms of Service</span></p>
+                    <p style='font-size: 0.8rem; color: #64748b;'>By securely logging in, you agree to our <span style='color: #02aadb; cursor: pointer;'>Terms of Service</span></p>
                 </div>
             """, unsafe_allow_html=True)
 
         with auth_tab2:
-            st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-            new_user = st.text_input("New Username", key="reg_u", placeholder="Choose username")
-            new_pass = st.text_input("New Password", type="password", key="reg_p", placeholder="8+ characters")
+            st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+            new_user = st.text_input("Provider Email / ID", key="reg_u", placeholder="e.g. dr.smith@clinic.com")
+            new_pass = st.text_input("Create Password", type="password", key="reg_p", placeholder="Minimum 8 characters")
             st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
-            if st.button("Create Account", use_container_width=True):
+            if st.button("Create Provider Account", use_container_width=True):
                 if new_user and new_pass:
                     save_user(new_user, new_pass)
-                    st.success("Account provisioned successfully.")
+                    st.success("Account provisioned successfully. Please sign in.")
                 else:
                     st.warning("Please complete all fields.")
         
         st.markdown("""
-            </div>
-            <!-- Footer -->
-            <div style='background-color: #f8fafc; padding: 1rem; text-align: center; border-top: 1px solid #e2e8f0;'>
+            <div style='margin-top: 2rem; text-align: center; padding-top: 1rem; border-top: 1px solid #e2e8f0;'>
                 <p style='margin: 0; font-size: 0.75rem; color: #94a3b8;'>© 2026 Heart AI Systems. All rights reserved.</p>
             </div>
-        </div>
         """, unsafe_allow_html=True)
 
 # --- 5. MAIN APPLICATION (Visible after Login) ---
