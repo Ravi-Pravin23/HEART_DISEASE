@@ -679,5 +679,3 @@ else:
                 st.markdown("</div>", unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Explorer Error: {e}")
-     except Exception as e:
-            st.error(f"Could not load dataset: {e}")
