@@ -204,30 +204,37 @@ st.markdown("""
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
 
-    /* All text inputs: sharp borders, clear focus */
-    input, textarea, [data-baseweb="input"] input,
-    [data-baseweb="base-input"] {
-        background-color: #ffffff !important;
-        color: #1f2937 !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 8px !important;
-        padding: 0.6rem 0.8rem !important;
-        font-size: 0.95rem !important;
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        box-shadow: none !important;
+    /* Input Container Blocks (PCDP Style Solid Fill) */
+    [data-baseweb="base-input"], [data-baseweb="select"] > div {
+        background-color: #f1f5f9 !important;
+        border: 1px solid #f1f5f9 !important;
+        border-radius: 6px !important;
+        padding: 0.2rem 0.5rem !important;
+        transition: all 0.2s ease;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02) !important;
     }
-    input:focus {
-        border-color: #02aadb !important;
-        box-shadow: 0 0 0 3px rgba(2, 170, 219, 0.15) !important;
+    
+    [data-baseweb="base-input"]:focus-within, [data-baseweb="select"] > div:focus-within {
+        background-color: #ffffff !important;
+        border-color: #8b5cf6 !important; /* PCDP Purple */
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15) !important;
     }
 
-    /* Selectbox / dropdown */
-    [data-baseweb="select"] > div {
-        background-color: #ffffff !important;
-        color: #1f2937 !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 8px !important;
+    /* Inner Input Elements (Transparent) */
+    input, textarea, [data-baseweb="input"] input {
+        background-color: transparent !important;
+        border: none !important;
+        color: #334155 !important;
+        font-size: 1rem !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
         box-shadow: none !important;
+        padding: 0.6rem 0.2rem !important;
+    }
+    input:focus, textarea:focus {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+        background-color: transparent !important;
     }
 
     /* Labels */
@@ -334,14 +341,14 @@ if not st.session_state['logged_in']:
             </div>
         """, unsafe_allow_html=True)
         
-        auth_tab1, auth_tab2 = st.tabs(["Sign In", "Register Provider"])
+        auth_tab1, auth_tab2 = st.tabs(["Login", "Register"])
         
         with auth_tab1:
             st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
             log_user = st.text_input("Provider Email / ID", key="log_u")
             log_pass = st.text_input("Password", type="password", key="log_p")
             st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
-            if st.button("Secure Login", use_container_width=True):
+            if st.button("Login", use_container_width=True):
                 users = load_users()
                 if log_user in users and (users[log_user] == log_pass or users[log_user] == hash_password(log_pass)):
                     if users[log_user] == log_pass:
@@ -357,7 +364,7 @@ if not st.session_state['logged_in']:
             new_user = st.text_input("Provider Email / ID", key="reg_u")
             new_pass = st.text_input("Create Password", type="password", key="reg_p")
             st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
-            if st.button("Create Provider Account", use_container_width=True):
+            if st.button("Register", use_container_width=True):
                 if new_user and new_pass:
                     save_user(new_user, new_pass)
                     st.success("Account provisioned successfully. Please sign in.")
