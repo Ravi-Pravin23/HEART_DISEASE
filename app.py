@@ -19,25 +19,76 @@ def load_models():
     """Loads the AI models and scalers securely."""
     return joblib.load('models/heart_model.pkl'), joblib.load('models/scaler.pkl'), joblib.load('models/features.pkl')
 
-def create_pdf(name, pred, probability, age_val, chol_val, bp_val, weight_val):
+def create_pdf(patient_name, doctor_name, pred, probability, age_val, chol_val, bp_val, weight_val):
     """Generates a downloadable PDF report for the patient."""
+    from datetime import datetime
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=15, style="B")
-    pdf.cell(200, 10, txt="Heart AI Diagnostic Medical Report", ln=True, align='C')
-    pdf.set_font("Arial", size=12)
+    
+    # Header styling
+    pdf.set_font("Helvetica", size=20, style="B")
+    pdf.set_text_color(2, 170, 219) # Primary brand color
+    pdf.cell(0, 10, txt="Heart AI Clinical Portal", ln=True, align='L')
+    
+    pdf.set_font("Helvetica", size=10)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 5, txt="123 Advanced Cardiology Way, Metro Health District", ln=True, align='L')
+    pdf.cell(0, 5, txt="Email: care@heartai.clinic | Phone: (555) 019-2038", ln=True, align='L')
+    
+    # Line break
+    pdf.ln(5)
+    pdf.set_draw_color(220, 220, 220)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(5)
+    
+    # Title
+    pdf.set_font("Helvetica", size=16, style="B")
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(0, 10, txt="OFFICIAL DIAGNOSTIC ASSESSMENT REPORT", ln=True, align='C')
+    pdf.ln(5)
+    
+    # Metadata
+    pdf.set_font("Helvetica", size=10, style="B")
+    pdf.cell(40, 8, txt="Date of Assessment:", border=0)
+    pdf.set_font("Helvetica", size=10)
+    pdf.cell(60, 8, txt=datetime.now().strftime("%B %d, %Y - %H:%M"), border=0)
+    
+    pdf.set_font("Helvetica", size=10, style="B")
+    pdf.cell(40, 8, txt="Attending Physician:", border=0)
+    pdf.set_font("Helvetica", size=10)
+    pdf.cell(0, 8, txt=f"Dr. {doctor_name}", border=0, ln=True)
+    
+    pdf.ln(5)
+    
+    # Patient Demographics block
+    pdf.set_fill_color(245, 247, 250)
+    pdf.set_font("Helvetica", size=10, style="B")
+    pdf.cell(0, 8, txt=" 1. PATIENT DEMOGRAPHICS & VITALS", border=1, ln=True, fill=True)
+    
+    pdf.set_font("Helvetica", size=10)
+    pdf.cell(40, 8, txt="Patient Name:", border="L")
+    pdf.set_font("Helvetica", size=10, style="B")
+    pdf.cell(60, 8, txt=f"{patient_name.strip() if patient_name else 'Anonymous Subject'}", border=0)
+    pdf.set_font("Helvetica", size=10)
+    pdf.cell(40, 8, txt="Age (Years):", border=0)
+    pdf.cell(0, 8, txt=f"{age_val}", border="R", ln=True)
+    
+    pdf.cell(40, 8, txt="Weight (kg):", border="L")
+    pdf.set_font("Helvetica", size=10, style="B")
+    pdf.cell(60, 8, txt=f"{weight_val}", border=0)
+    pdf.set_font("Helvetica", size=10)
+    pdf.cell(40, 8, txt="Blood Pressure:", border=0)
+    pdf.cell(0, 8, txt=f"{bp_val} mmHg", border="R", ln=True)
+
+    pdf.cell(40, 8, txt="Total Cholesterol:", border="L, B")
+    pdf.set_font("Helvetica", size=10, style="B")
+    pdf.cell(60, 8, txt=f"{chol_val} mg/dl", border="B")
+    pdf.set_font("Helvetica", size=10)
+    pdf.cell(40, 8, txt="", border="B")
+    pdf.cell(0, 8, txt="", border="R, B", ln=True)
+    
     pdf.ln(10)
     
-    pdf.set_font("Arial", size=12, style="B")
-    pdf.cell(200, 10, txt="Patient Information:", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=f"Assessed by: Dr. {name}", ln=True)
-    pdf.cell(200, 10, txt=f"Age: {age_val} | Weight: {weight_val} kg | Chol: {chol_val} mg/dl | BP: {bp_val} mmHg", ln=True)
-    pdf.ln(10)
-    
-    pdf.set_font("Arial", size=12, style="B")
-    pdf.cell(200, 10, txt="Diagnostic Results:", ln=True)
-    pdf.set_font("Arial", size=12)
     disease_map = {
         0: 'Healthy / Low Risk',
         1: 'Coronary Artery Disease (CAD)',
@@ -54,12 +105,65 @@ def create_pdf(name, pred, probability, age_val, chol_val, bp_val, weight_val):
         12: 'Peripheral Artery Disease (PAD)'
     }
     status = disease_map.get(pred, 'Unknown')
-    pdf.cell(200, 10, txt=f"Prediction: {status}", ln=True)
-    pdf.cell(200, 10, txt=f"Diagnostic Confidence: {probability*100:.2f}%", ln=True)
+    
+    # Assessment block
+    pdf.set_font("Helvetica", size=10, style="B")
+    pdf.cell(0, 8, txt=" 2. AI DIAGNOSTIC FINDINGS", border=1, ln=True, fill=True)
+    
+    pdf.set_font("Helvetica", size=10)
+    pdf.cell(50, 10, txt="Primary Diagnosis:", border="L")
+    pdf.set_font("Helvetica", size=11, style="B")
+    if pred > 0:
+        pdf.set_text_color(225, 29, 72) # Red for risk
+    else:
+        pdf.set_text_color(5, 150, 105) # Green for healthy
+    pdf.cell(0, 10, txt=f"{status}", border="R", ln=True)
+    
+    pdf.set_text_color(15, 23, 42)
+    pdf.set_font("Helvetica", size=10)
+    pdf.cell(50, 10, txt="Model Confidence Level:", border="L, B")
+    pdf.set_font("Helvetica", size=10, style="B")
+    pdf.cell(0, 10, txt=f"{probability*100:.2f}%", border="R, B", ln=True)
+    
     pdf.ln(10)
     
-    pdf.set_font("Arial", size=10, style="I")
-    pdf.cell(200, 10, txt="Note: This is an AI-generated report. Please consult a doctor for a formal clinical diagnosis.", ln=True)
+    # Clinical Remarks
+    pdf.set_font("Helvetica", size=10, style="B")
+    pdf.cell(0, 8, txt=" 3. CLINICAL REMARKS & RECOMMENDATIONS", border=1, ln=True, fill=True)
+    pdf.set_font("Helvetica", size=10)
+    if pred > 0:
+        recommendation = ("This AI screening has identified elevated risk factors associated "
+                          f"with {status}. It is strongly recommended that the patient undergoes "
+                          "statutory diagnostic verifications, including an echocardiogram and a complete "
+                          "metabolic panel. Ensure strict monitoring of blood pressure and cholesterol.")
+    else:
+        recommendation = ("This AI screening does not detect immediate cardiovascular abnormalities. "
+                          "The patient presents a low-risk profile. Routine health maintenance, including "
+                          "balanced diet and periodic checkups, is recommended to preserve baseline vitals.")
+    pdf.multi_cell(0, 6, txt=recommendation, border="L, R, B", align="L")
+    
+    pdf.ln(15)
+    
+    # Physician signature
+    pdf.cell(100, 10, txt="", border=0)
+    pdf.cell(90, 10, txt="Electronically Signed By:", border=0, ln=True, align="C")
+    pdf.set_font("Helvetica", size=12, style="I")
+    pdf.cell(100, 10, txt="", border=0)
+    pdf.cell(90, 10, txt=f"Dr. {doctor_name}", border=0, ln=True, align="C")
+    pdf.set_font("Helvetica", size=10)
+    pdf.cell(100, 10, txt="", border=0)
+    pdf.set_draw_color(100, 100, 100)
+    pdf.line(120, pdf.get_y(), 190, pdf.get_y())
+    pdf.cell(90, 10, txt="Department of Cardiology", border=0, ln=True, align="C")
+    
+    # Footer disclaimer
+    pdf.set_y(-30)
+    pdf.set_font("Helvetica", size=8, style="I")
+    pdf.set_text_color(150, 150, 150)
+    disclaimer = ("DISCLAIMER: This document is an AI-assisted preliminary medical report and does not constitute "
+                  "a definitive clinical diagnosis. Final medical decisions must be carried out by certified healthcare "
+                  "professionals. Protected Health Information (PHI) contained in this report is strictly confidential.")
+    pdf.multi_cell(0, 4, txt=disclaimer, align='C')
     
     return pdf.output(dest='S').encode('latin-1')
 
@@ -71,6 +175,10 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)''')
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN full_name TEXT")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
 
@@ -91,18 +199,24 @@ def init_patients_db():
         c.execute("ALTER TABLE patients ADD COLUMN weight INTEGER DEFAULT 70")
     except sqlite3.OperationalError:
         pass # Already exists
+        
+    # Migration: add patient_name column
+    try:
+        c.execute("ALTER TABLE patients ADD COLUMN patient_name TEXT")
+    except sqlite3.OperationalError:
+        pass # Already exists
     
     conn.commit()
     conn.close()
 
-def save_patient_record(doctor, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob):
+def save_patient_record(doctor, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob):
     conn = sqlite3.connect(PATIENTS_DB)
     c = conn.cursor()
     c.execute('''INSERT INTO patients (
-        doctor_name, age, sex, cp, trestbps, chol, fbs, restecg, 
+        doctor_name, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, 
         thalach, exang, oldpeak, slope, ca, thal, weight, prediction_str, probability
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-    (doctor, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob))
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+    (doctor, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob))
     conn.commit()
     conn.close()
 
@@ -111,13 +225,27 @@ def load_users():
     c = conn.cursor()
     c.execute("SELECT username, password FROM users")
     users = {row[0]: row[1] for row in c.fetchall()}
+    
+    full_names = {}
+    try:
+        c.execute("SELECT username, full_name FROM users")
+        full_names = {row[0]: (row[1] if row[1] else row[0]) for row in c.fetchall()}
+    except sqlite3.OperationalError:
+        full_names = {k: k for k in users.keys()}
+        
     conn.close()
-    return users
+    return users, full_names
 
-def save_user(username, password):
+def save_user(username, password, full_name=None):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("REPLACE INTO users (username, password) VALUES (?, ?)", (username, hash_password(password)))
+    if full_name:
+        try:
+            c.execute("REPLACE INTO users (username, password, full_name) VALUES (?, ?, ?)", (username, hash_password(password), full_name))
+        except sqlite3.OperationalError:
+            c.execute("REPLACE INTO users (username, password) VALUES (?, ?)", (username, hash_password(password)))
+    else:
+        c.execute("REPLACE INTO users (username, password) VALUES (?, ?)", (username, hash_password(password)))
     conn.commit()
     conn.close()
 
@@ -145,11 +273,21 @@ if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
 if 'user_name' not in st.session_state:
     st.session_state['user_name'] = ""
+if 'n8n_webhook_url' not in st.session_state:
+    st.session_state['n8n_webhook_url'] = "http://localhost:5678/webhook/heart-alert"
 
 # --- 3. UI CONFIGURATION ---
-st.set_page_config(page_title="Heart AI Clinical Portal", page_icon="⚕️", layout="wide")
+st.set_page_config(
+    page_title="Heart AI Clinical Portal",
+    page_icon="⚕️",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
 
 st.markdown("""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
@@ -203,32 +341,132 @@ st.markdown("""
         color: #4b5563 !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
+    /* Keep Material icon ligatures rendering as icons in the sidebar toggle */
+    section[data-testid="stSidebar"] span[class*="material-symbols"],
+    section[data-testid="stSidebar"] i[class*="material-icons"] {
+        font-family: "Material Symbols Rounded", "Material Symbols Outlined", "Material Icons" !important;
+    }
+    /* Material Symbols default rendering (ligatures) */
+    .material-symbols-rounded {
+        font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+        line-height: 1;
+        vertical-align: middle;
+    }
+
+    /* Fallback: if icon font fails, show arrows instead of ligature text */
+    /* Fallback: force a single clean double-arrow glyph */
+    [data-testid="stSidebarCollapseButton"] span,
+    [data-testid="stSidebarExpandButton"] span {
+        display: none !important; /* hide ligature text + any nested spans */
+    }
+    /* Center the glyph in the sidebar toggle */
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarExpandButton"] {
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 42px !important;     /* make it easy to touch */
+        height: 42px !important;    /* make it easy to touch */
+        min-width: 42px !important;
+        min-height: 42px !important;
+        border-radius: 10px !important;
+        background: rgba(255,255,255,0.95) !important;
+        border: 1px solid #e5e7eb !important;
+        cursor: pointer !important;
+        padding: 0 !important;
+        z-index: 50 !important;
+    }
+    [data-testid="stSidebarCollapseButton"]::before {
+        content: "«" !important;
+        font-size: 20px !important;
+        color: #334155 !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        line-height: 1 !important;
+        pointer-events: none !important; /* ensure click works on the button */
+    }
+    [data-testid="stSidebarExpandButton"]::before {
+        content: "»" !important;
+        font-size: 20px !important;
+        color: #334155 !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        line-height: 1 !important;
+        pointer-events: none !important; /* ensure click works on the button */
+    }
+    [data-testid="stSidebarCollapseButton"]:hover::before,
+    [data-testid="stSidebarExpandButton"]:hover::before {
+        color: #0f172a !important;
+    }
+
+    /* Sidebar navigation (radio) polish */
+    section[data-testid="stSidebar"] [role="radiogroup"] {
+        gap: 0.35rem;
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"] label {
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        padding: 0.55rem 0.75rem !important;
+        margin: 0.25rem 0 !important;
+        transition: all 0.15s ease-in-out;
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
+        border-color: #02aadb !important;
+        box-shadow: 0 0 0 3px rgba(2, 170, 219, 0.10) !important;
+        transform: translateY(-1px);
+    }
+    /* Selected option */
+    section[data-testid="stSidebar"] div[role="radiogroup"] input:checked + div {
+        color: #0f172a !important;
+        font-weight: 600 !important;
+    }
+    /* Tighten spacing around sidebar widgets */
+    section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: 0.6rem;
+    }
 
     /* Input Container Blocks (PCDP Style Solid Fill) */
-    [data-baseweb="base-input"], [data-baseweb="select"] > div {
+    /* Input Container Blocks (PCDP Style Solid Fill) - Fix for eye icon double border */
+    .stTextInput > div > div, .stSelectbox > div > div {
         background-color: #f1f5f9 !important;
-        border: 1px solid #f1f5f9 !important;
+        border: 1px solid #e2e8f0 !important;
         border-radius: 6px !important;
-        padding: 0.2rem 0.5rem !important;
         transition: all 0.2s ease;
         box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+        overflow: hidden;
     }
     
-    [data-baseweb="base-input"]:focus-within, [data-baseweb="select"] > div:focus-within {
+    .stTextInput > div > div:focus-within, .stSelectbox > div > div:focus-within {
         background-color: #ffffff !important;
         border-color: #8b5cf6 !important; /* PCDP Purple */
         box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15) !important;
     }
 
-    /* Inner Input Elements (Transparent) */
-    input, textarea, [data-baseweb="input"] input {
+    /* Override base-web defaults leaking through */
+    [data-baseweb="base-input"], [data-baseweb="input"], [data-baseweb="select"] > div {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Inner Input Elements */
+    input, textarea {
         background-color: transparent !important;
         border: none !important;
         color: #334155 !important;
         font-size: 1rem !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
         box-shadow: none !important;
-        padding: 0.6rem 0.2rem !important;
+        padding: 0.6rem 0.5rem !important;
+    }
+    input[type="password"] {
+        padding-right: 3rem !important;
     }
     input:focus, textarea:focus {
         border: none !important;
@@ -236,14 +474,43 @@ st.markdown("""
         outline: none !important;
         background-color: transparent !important;
     }
+    
+    /* Hide the browser's default password reveal eye icon to prevent double icons */
+    input::-ms-reveal,
+    input::-ms-clear {
+        display: none !important;
+    }
+    input::-webkit-contacts-auto-fill-button, 
+    input::-webkit-credentials-auto-fill-button {
+        visibility: hidden !important;
+        pointer-events: none !important;
+        position: absolute !important;
+        right: 0 !important;
+    }
+
+
 
     /* Labels */
     .stTextInput label, .stSelectbox label, .stSlider label,
-    .stNumberInput label, label, p, span {
+    .stNumberInput label, label, p {
         color: #475569 !important;
         font-weight: 500 !important;
         font-size: 0.9rem !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
+    }
+
+    /* Hide 'Press Enter to apply' instruction to fix overlapping */
+    [data-testid="InputInstructions"] {
+        display: none !important;
+    }
+
+    /* Do not override Streamlit icon ligatures (expander/toggle chevrons) */
+    span[class*="material-symbols"],
+    i[class*="material-icons"] {
+        font-family: "Material Symbols Rounded", "Material Symbols Outlined", "Material Icons" !important;
+        font-weight: normal !important;
+        letter-spacing: normal !important;
+        text-transform: none !important;
     }
 
     /* Tabs */
@@ -290,6 +557,13 @@ st.markdown("""
         transition: background-color 0.2s ease, transform 0.1s ease;
         box-shadow: 0 4px 6px rgba(2, 170, 219, 0.2);
     }
+    
+    /* Sidebar specific button styles to prevent text wrapping */
+    section[data-testid="stSidebar"] .stButton > button {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
     .stButton > button:hover {
         background-color: #028eb8 !important; 
         color: white !important;
@@ -330,12 +604,13 @@ st.markdown("""
 if not st.session_state['logged_in']:
     st.markdown("""
         <style>
-        [data-testid="column"]:nth-of-type(2) {
+        /* Stronger targeting for the Auth Column to ensure the white card is visible */
+        [data-testid="column"]:nth-of-type(2), [data-testid="stColumn"]:nth-of-type(2) {
             background-color: #ffffff !important;
-            padding: 2.5rem 3rem !important;
+            padding: 3rem 2.5rem !important;
             border-radius: 12px !important;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.05) !important;
+            border: 2px solid #e2e8f0 !important;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1) !important;
         }
         .auth-btn > button {
             background-color: #8b5cf6 !important;
@@ -364,12 +639,12 @@ if not st.session_state['logged_in']:
     
     with auth_col:
         st.markdown("""
-            <div style='text-align: center; margin-bottom: 1.5rem;'>
-                <div style='display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;'>
-                    <span style='font-size: 2.2rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));'>🧠</span>
+            <div style='text-align: center; margin-bottom: 2rem;'>
+                <div style='display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 5px;'>
+                    <span style='font-size: 2.2rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));'>❤️</span>
                     <span style='font-family: Poppins; font-weight: 600; font-size: 1.5rem; color: #0f172a;'>Heart AI Portal</span>
                 </div>
-                <h3 style='color: #8b5cf6 !important; font-family: "Poppins", sans-serif; margin: 0; font-size: 1.3rem; font-weight: 600;'>Hi, Welcome Back!</h3>
+                <h3 style='color: #8b5cf6 !important; font-family: "Poppins", sans-serif; margin: 0; font-size: 1rem; font-weight: 500;'>Empowering Urban Cardiology with Precision AI</h3>
             </div>
         """, unsafe_allow_html=True)
         
@@ -381,113 +656,162 @@ if not st.session_state['logged_in']:
             log_pass = st.text_input("Password", type="password", key="log_p")
             
             st.markdown("<div class='auth-btn'>", unsafe_allow_html=True)
-            if st.button("Login", use_container_width=True):
-                users = load_users()
+            if st.button("Login", width="stretch"):
+                users, full_names = load_users()
                 if log_user in users and (users[log_user] == log_pass or users[log_user] == hash_password(log_pass)):
                     if users[log_user] == log_pass:
-                        save_user(log_user, log_pass)
+                        save_user(log_user, log_pass, full_names.get(log_user))
                     st.session_state['logged_in'] = True
                     st.session_state['user_name'] = log_user
+                    st.session_state['full_name'] = full_names.get(log_user, log_user)
                     st.rerun()
                 else:
                     st.error("Authentication failed.")
             st.markdown("</div>", unsafe_allow_html=True)
-            
-            # --- PCDP Google SSO Box ---
-            st.markdown("""
-                <div style='text-align: center; margin: 1.5rem 0 1rem 0; position: relative;'>
-                    <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 0;'/>
-                    <span style='background: white; padding: 0 15px; color: #0f172a; position: relative; top: -12px; font-size: 0.95rem; font-weight: 500;'>Or</span>
-                </div>
-                
-                <div style='border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.6rem 1rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: white; max-width: 320px; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05);' onclick="document.getElementById('google_login_hack').click();">
-                    <div style='display: flex; align-items: center; gap: 12px;'>
-                        <div style='width: 30px; height: 30px; border-radius: 50%; background-color: #818cf8; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem;'>R</div>
-                        <div style='text-align: left;'>
-                            <div style='font-size: 0.8rem; font-weight: 600; color: #334155; line-height: 1.2;'>Sign in as RAVI PRAVIN</div>
-                            <div style='font-size: 0.7rem; color: #64748b; line-height: 1.2;'>ravipravin.ad23@bitsathy.ac.in <span style='font-size: 0.6rem; margin-left:2px;'>▼</span></div>
-                        </div>
-                    </div>
-                    <div style='font-size: 1.1rem; font-weight: 900; letter-spacing: 1px;'>
-                        <span style='color: #4285F4;'>G</span>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            # Hidden functional button for the Google SSO
-            if st.button("google_sso_hidden", key="google_login_hack", on_click=lambda: st.session_state.update({'logged_in': True, 'user_name': 'Ravi Pravin'})):
-                pass
-            st.markdown("""<style>button[key="google_login_hack"] {display: none;}</style>""", unsafe_allow_html=True)
-
         with auth_tab2:
             st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+            
+            new_name = st.text_input("Full Name", key="reg_name", placeholder="e.g., Dr. Ravi Pravin")
+            new_email = st.text_input("Email Address", key="reg_email", placeholder="e.g., ravipravin@clinic.com")
             new_user = st.text_input("Username", key="reg_u")
             new_pass = st.text_input("Create Password", type="password", key="reg_p")
+            confirm_pass = st.text_input("Confirm Password", type="password", key="reg_p_conf")
             
             st.markdown("<div class='auth-btn'>", unsafe_allow_html=True)
-            if st.button("Register", use_container_width=True):
-                if new_user and new_pass:
-                    save_user(new_user, new_pass)
-                    st.success("Account provisioned successfully. Please sign in.")
+            if st.button("Register", width="stretch"):
+                if new_name and new_email and new_user and new_pass and confirm_pass:
+                    if new_pass == confirm_pass:
+                        save_user(new_user, new_pass, new_name)
+                        st.success("Account provisioned successfully. Please switch to Login.")
+                    else:
+                        st.error("Passwords do not match. Please try again.")
                 else:
-                    st.warning("Please complete all fields.")
+                    st.warning("Please complete all required fields.")
             st.markdown("</div>", unsafe_allow_html=True)
-
+            
 # --- 5. MAIN APPLICATION (Visible after Login) ---
 else:
-    # --- Custom Top Navigation (Dr.Doctor Style) ---
-    st.markdown("""
-        <style>
-        /* Hide the default sidebar completely */
-        [data-testid="collapsedControl"] { display: none; }
-        section[data-testid="stSidebar"] { display: none; }
-        </style>
-    """, unsafe_allow_html=True)
-    
-    # Top Bar Layout
-    top_col1, top_col2, top_col3 = st.columns([1, 2, 1])
-    
-    with top_col1:
+    # --- Vertical Sidebar Navigation ---
+    with st.sidebar:
         st.markdown(f"""
-            <div style='display: flex; align-items: center; gap: 10px; padding-top: 5px;'>
+            <div style='display: flex; align-items: center; gap: 10px; margin-bottom: 2rem;'>
                 <span style='font-size: 2rem; color: #f05b41;'>⚕️</span>
                 <span style='font-family: Poppins; font-weight: 700; font-size: 1.5rem; color: #02aadb;'>Heart AI</span>
             </div>
         """, unsafe_allow_html=True)
-        
-    with top_col2:
-        # We use a horizontal radio button styled to look like top nav links
-        menu_selection = st.radio(
-            "Navigation",
-            ["🩺 Assessment", "📈 Dashboard", "📂 Records", "⚙️ Settings"],
-            horizontal=True,
-            label_visibility="collapsed"
+
+        def _set_page(page: str):
+            st.session_state["active_page"] = page
+
+        if "active_page" not in st.session_state:
+            st.session_state["active_page"] = "🩺 Assessment"
+
+        # st.caption("Use the top-left arrow to expand/collapse the menu.")
+        st.markdown(
+            "<div style='font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; color: #94a3b8; margin: 0.25rem 0;'>MENU</div>",
+            unsafe_allow_html=True,
         )
+
+        nav_query = st.text_input("Search menu", placeholder="Type to filter…", label_visibility="collapsed")
+
+        PAGES = [
+            ("Clinical", "🩺 Assessment"),
+            ("Clinical", "📂 Records"),
+            ("Insights", "📈 Dashboard"),
+            ("Insights", "📊 Data Explorer"),
+            ("Admin", "⚙️ Settings"),
+        ]
+
+        def _matches(q: str, label: str) -> bool:
+            q = (q or "").strip().lower()
+            if not q:
+                return True
+            return q in label.lower()
+
+        # Sectioned, searchable navigation (buttons)
+        current_section = None
+        for section, label in PAGES:
+            if not _matches(nav_query, label):
+                continue
+            if section != current_section:
+                if current_section is not None:
+                    st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div style='font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; color: #cbd5e1; margin: 0.25rem 0;'>{section.upper()}</div>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown("<hr style='margin: 0.25rem 0 0.5rem 0; border: 0; border-top: 1px solid #e2e8f0;' />", unsafe_allow_html=True)
+                current_section = section
+
+            is_active = st.session_state["active_page"] == label
+            btn_label = f"• {label}" if is_active else label
+            if st.button(btn_label, width="stretch", key=f"nav_{label}"):
+                _set_page(label)
+
+        # Quick actions
+        st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div style='font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; color: #cbd5e1; margin: 0.25rem 0;'>QUICK ACTIONS</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown("<hr style='margin: 0.25rem 0 0.5rem 0; border: 0; border-top: 1px solid #e2e8f0;' />", unsafe_allow_html=True)
+
+        qa1, qa2 = st.columns(2)
+        with qa1:
+            if st.button("New assessment", width="stretch", key="qa_new_assessment"):
+                st.session_state.pop("last_prediction", None)
+                _set_page("🩺 Assessment")
+        with qa2:
+            if st.button("Export records", width="stretch", key="qa_export_records"):
+                st.session_state["export_records_hint"] = True
+                _set_page("📂 Records")
+
+        if st.button("Test n8n", width="stretch", key="qa_test_n8n"):
+            try:
+                res = requests.post(st.session_state["n8n_webhook_url"], json={"test": True}, timeout=3)
+                if res.status_code == 200:
+                    st.success("Connected to n8n.")
+                else:
+                    st.error(f"n8n status: {res.status_code}")
+            except Exception:
+                st.error("Could not reach n8n.")
         
-    with top_col3:
-        # Right aligned logout action matching the Orange Signup button style
-        st.markdown("<div style='text-align: right; padding-top: 5px;'>", unsafe_allow_html=True)
-        if st.button("Logout Session", use_container_width=False, key="logout_btn"):
+        st.markdown("<div style='margin-top: 2rem;'></div>", unsafe_allow_html=True)
+        display_name = st.session_state.get('full_name', st.session_state.get('user_name', ''))
+        initials = "".join([p[0].upper() for p in str(display_name).split()[:2]]) or "DR"
+        st.markdown(
+            f"""
+            <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:12px; background:#ffffff;">
+              <div style="width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:#e0f2fe; color:#0284c7; font-weight:700;">
+                {initials}
+              </div>
+              <div style="line-height:1.1;">
+                <div style="font-weight:700; color:#0f172a; font-size:0.95rem;">Dr. {display_name}</div>
+                <div style="color:#94a3b8; font-size:0.8rem;">Clinician</div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Logout", width="stretch", key="logout_btn"):
             st.session_state['logged_in'] = False
             st.rerun()
-        st.markdown(f"<span style='font-size: 0.9rem; color: #64748b; margin-right: 15px;'>Dr. {st.session_state['user_name']}</span>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-    st.markdown("<hr style='margin-top: 5px; margin-bottom: 2rem; border: none; border-bottom: 1px solid #e2e8f0;'/>", unsafe_allow_html=True)
+
+    menu_selection = st.session_state["active_page"]
 
     # --- SETTINGS / INTEGRATION PAGE ---
     if menu_selection == "⚙️ Settings":
         st.title("System Integration Settings")
         st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
         st.subheader("n8n Automated Alerts")
-        n8n_webhook_url = st.text_input(
+        st.session_state['n8n_webhook_url'] = st.text_input(
             "Webhook Endpoint URL",
-            value="http://localhost:5678/webhook/heart-alert",
+            value=st.session_state['n8n_webhook_url'],
             help="n8n webhook that receives patient data and sends the email."
         )
-        if st.button("Test Connection", use_container_width=True):
+        if st.button("Test Connection", width="stretch"):
             try:
-                res = requests.post(n8n_webhook_url, json={"test": True}, timeout=3)
+                res = requests.post(st.session_state['n8n_webhook_url'], json={"test": True}, timeout=3)
                 if res.status_code == 200:
                     st.success("✅ Connected to n8n!")
                 else:
@@ -503,12 +827,12 @@ else:
         # --- BATCH PROCESSING FEATURE ---
         with st.expander("📁 Batch Processing (CSV)", expanded=False):
             st.markdown("Upload multiple patient records for bulk AI stratification.")
-            uploaded_file = st.file_uploader("", type="csv")
+            uploaded_file = st.file_uploader("Upload CSV file", type="csv", label_visibility="collapsed")
             if uploaded_file is not None:
                 try:
                     batch_df = pd.read_csv(uploaded_file)
                     st.write(f"Loaded {len(batch_df)} patient records.")
-                    if st.button("Analyze Batch", use_container_width=True):
+                    if st.button("Analyze Batch", width="stretch"):
                         try:
                             model, scaler, features = load_models()
                             if not all(col in batch_df.columns for col in features):
@@ -524,7 +848,7 @@ else:
                                 batch_df['Confidence (%)'] = (batch_probs * 100).round(2)
                                 
                                 st.success("Batch analysis complete.")
-                                st.dataframe(batch_df[['Diagnosis', 'Confidence (%)'] + features].head(10), use_container_width=True)
+                                st.dataframe(batch_df[['Diagnosis', 'Confidence (%)'] + features].head(10), width="stretch")
                                 st.download_button("Export Batch Report", batch_df.to_csv(index=False).encode('utf-8'), "Batch_Report.csv", "text/csv")
                         except Exception as e: st.error(f"Error: {e}")
                 except Exception as e: st.error(f"Read Error: {e}")
@@ -535,9 +859,11 @@ else:
         st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
         st.markdown("<h3 style='margin-top: 0;'>Patient Demographics & Vitals</h3>", unsafe_allow_html=True)
         
-        email_col, _ = st.columns([1.5, 1])
+        name_col, email_col = st.columns([1, 1.5])
+        with name_col:
+            patient_name = st.text_input("Patient Full Name", placeholder="e.g., John Doe")
         with email_col:
-            patient_email = st.text_input("Patient Notification Email", value="ravipravin2005@gmail.com", help="Report will be sent here.")
+            patient_email = st.text_input("Patient Notification Email", placeholder="e.g., patient@example.com", help="Report will be sent here.")
         
         st.markdown("<hr style='margin: 1rem 0; border: 0; border-top: 1px solid #e5e7eb;' />", unsafe_allow_html=True)
         
@@ -575,7 +901,7 @@ else:
         with s3: thal = st.selectbox("Thal Status", [1, 2, 3])
         
         st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
-        analyze_btn = st.button("Analyze Clinical Profile", use_container_width=True)
+        analyze_btn = st.button("Analyze Clinical Profile", width="stretch")
         st.markdown("</div>", unsafe_allow_html=True)
         if analyze_btn:
             # Load Model
@@ -613,10 +939,11 @@ else:
             st.session_state['last_prob'] = prob
             st.session_state['last_disease'] = disease_name
             st.session_state['last_vitals'] = (age, chol, trestbps, thalach, oldpeak, weight)
+            st.session_state['last_patient_name'] = patient_name
 
             # --- Save to Patient History Database ---
             save_patient_record(
-                st.session_state['user_name'], age, sex, cp, trestbps, chol, fbs, restecg, 
+                st.session_state['user_name'], patient_name, age, sex, cp, trestbps, chol, fbs, restecg, 
                 thalach, exang, oldpeak, slope, ca, thal, weight, disease_name, prob
             )
 
@@ -624,6 +951,7 @@ else:
             if patient_email:
                 try:
                     payload = {
+                        "patient_name": patient_name,
                         "patient_email": patient_email,
                         "patient_age": age,
                         "patient_weight": weight,
@@ -633,13 +961,13 @@ else:
                         "disease_type": disease_name,
                         "diagnosed_by": st.session_state['user_name']
                     }
-                    response = requests.post(n8n_webhook_url, json=payload, timeout=4)
+                    response = requests.post(st.session_state['n8n_webhook_url'], json=payload, timeout=4)
                     if response.status_code == 200:
                         st.success(f"✅ Diagnostic report sent to **{patient_email}** via n8n!")
                     else:
                         st.warning(f"⚠️ n8n responded with status {response.status_code}")
                 except Exception:
-                    st.info("💡 n8n not reachable — configure the webhook URL in the sidebar.")
+                    st.info("💡 n8n not reachable — configure the webhook URL in the Settings tab.")
         
         # --- Results Display (Persistent) ---
         if 'last_prediction' in st.session_state:
@@ -688,7 +1016,7 @@ else:
                     }
                 ))
                 fig_gauge.update_layout(height=220, margin=dict(l=10, r=10, t=40, b=10), paper_bgcolor="rgba(0,0,0,0)")
-                st.plotly_chart(fig_gauge, use_container_width=True)
+                st.plotly_chart(fig_gauge, width="stretch")
 
             with advice_col:
                 st.markdown("<h4 style='color: #374151; margin-top: 0;'>Clinical Guidance Protocol</h4>", unsafe_allow_html=True)
@@ -724,7 +1052,7 @@ else:
                     margin=dict(l=20, r=20, t=20, b=20), 
                     paper_bgcolor="rgba(0,0,0,0)"
                 )
-                st.plotly_chart(fig_radar, use_container_width=True)
+                st.plotly_chart(fig_radar, width="stretch")
                 st.markdown("</div>", unsafe_allow_html=True)
                 
             with c_factors:
@@ -750,23 +1078,29 @@ else:
                 )
                 fig_bar.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#e5e7eb', zeroline=False)
                 fig_bar.update_yaxes(showgrid=False)
-                st.plotly_chart(fig_bar, use_container_width=True)
+                st.plotly_chart(fig_bar, width="stretch")
                 st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
-            pdf_bytes = create_pdf(st.session_state['user_name'], prediction, prob, age, chol, trestbps, weight)
+            pdf_bytes = create_pdf(st.session_state.get('last_patient_name', ''), st.session_state['user_name'], prediction, prob, age, chol, trestbps, weight)
+            
+            # format patient name for filename or fallback
+            p_name_file = st.session_state.get('last_patient_name', 'Patient')
+            if not p_name_file.strip():
+                p_name_file = "Patient"
+                
             st.download_button(
                 label="Generate Official Medical Report (PDF)",
                 data=pdf_bytes,
-                file_name=f"Clinical_Report_{st.session_state['user_name'].replace(' ', '_')}.pdf",
+                file_name=f"Clinical_Report_{p_name_file.replace(' ', '_')}.pdf",
                 mime="application/pdf",
-                use_container_width=True
+                width="stretch"
             )
 
     # ==========================================
     # PAGE 2: 📈 CLINIC DASHBOARD
     # ==========================================
-    elif menu_selection == "📈 Patient Dashboard":
+    elif menu_selection == "📈 Dashboard":
         st.title("Clinic Insights Dashboard")
         st.markdown("<p style='color:#6b7280; font-size: 1.1rem; margin-top:-1rem;'>Real-time clinical metrics and screening volume.</p>", unsafe_allow_html=True)
         
@@ -793,17 +1127,18 @@ else:
         )
         fig_line.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#e5e7eb')
         fig_line.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#e5e7eb', zeroline=False)
-        st.plotly_chart(fig_line, use_container_width=True)
+        st.plotly_chart(fig_line, width="stretch")
         st.markdown("</div>", unsafe_allow_html=True)
 
     # ==========================================
     # PAGE 3: 📂 PATIENT HISTORY
     # ==========================================
-    elif menu_selection == "📂 Patient History":
+    elif menu_selection == "📂 Records":
         st.title("Digital Health Records")
-        st.markdown(f"<p style='color:#6b7280; font-size: 1.1rem; margin-top:-1rem;'>Secure access to diagnostic history for Dr. {st.session_state['user_name']}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color:#6b7280; font-size: 1.1rem; margin-top:-1rem;'>Secure access to diagnostic history for Dr. {display_name}</p>", unsafe_allow_html=True)
         conn = sqlite3.connect(PATIENTS_DB)
-        history_df = pd.read_sql_query("SELECT timestamp, age, sex, weight, trestbps, chol, prediction_str, probability FROM patients WHERE doctor_name = ? ORDER BY timestamp DESC", conn, params=(st.session_state['user_name'],))
+        # Fetching id as well so we can uniquely identify records to delete
+        history_df = pd.read_sql_query("SELECT id, timestamp, patient_name, age, sex, weight, trestbps, chol, prediction_str, probability FROM patients WHERE doctor_name = ? ORDER BY timestamp DESC", conn, params=(st.session_state['user_name'],))
         conn.close()
         
         if history_df.empty:
@@ -812,8 +1147,89 @@ else:
             st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
             history_df['Confidence'] = (history_df['probability'] * 100).round(1).astype(str) + "%"
             history_df['Sex'] = history_df['sex'].map({1: 'M', 0: 'F'})
-            display_df = history_df[['timestamp', 'age', 'Sex', 'weight', 'prediction_str', 'Confidence']]
-            st.dataframe(display_df, use_container_width=True)
+            
+            if 'editor_key_counter' not in st.session_state:
+                st.session_state['editor_key_counter'] = 0
+            if 'select_all_state' not in st.session_state:
+                st.session_state['select_all_state'] = False
+
+            st.markdown("<p style='font-size: 0.9rem; color: #64748b; margin-bottom: 0.2rem;'>Search, select, and manage your clinical records below.</p>", unsafe_allow_html=True)
+            
+            search_query = st.text_input("🔍 Search", placeholder="Type name, diagnosis, etc. to filter...", label_visibility="collapsed")
+            if search_query:
+                # Filter history_df based on search_query matching any pertinent column
+                searchable_cols = ['timestamp', 'patient_name', 'age', 'Sex', 'weight', 'prediction_str']
+                mask = history_df[searchable_cols].astype(str).apply(lambda row: row.str.contains(search_query, case=False).any(), axis=1)
+                history_df = history_df[mask]
+                
+            if history_df.empty:
+                st.warning("No records match your search query.")
+            else:
+                col1, col2, _ = st.columns([1, 1, 4])
+                with col1:
+                    if st.button("☑️ Select All", use_container_width=True):
+                        st.session_state['select_all_state'] = True
+                        st.session_state['editor_key_counter'] += 1
+                        st.rerun()
+                with col2:
+                    if st.button("☐ Clear All", use_container_width=True):
+                        st.session_state['select_all_state'] = False
+                        st.session_state['editor_key_counter'] += 1
+                        st.rerun()
+                
+                # Add a selection column for deletion
+                history_df.insert(0, "Select", st.session_state['select_all_state'])
+            
+                # We use st.data_editor to allow row selection
+                display_cols = ['Select', 'timestamp', 'patient_name', 'age', 'Sex', 'weight', 'prediction_str', 'Confidence']
+                
+                edited_df = st.data_editor(
+                    history_df[display_cols],
+                    hide_index=True,
+                    use_container_width=True,
+                    disabled=['timestamp', 'patient_name', 'age', 'Sex', 'weight', 'prediction_str', 'Confidence'],
+                    column_config={"Select": st.column_config.CheckboxColumn("Select", default=False)},
+                    key=f"record_editor_{st.session_state['editor_key_counter']}"
+                )
+                
+                # Find selected IDs
+                selected_labels = edited_df.index[edited_df['Select']].tolist()
+                selected_ids = history_df.loc[selected_labels]['id'].tolist()
+                
+                if selected_ids:
+                    del_col, exp_col = st.columns(2)
+                    with del_col:
+                        if st.button(f"🗑️ Delete Selected ({len(selected_ids)})", type="primary", use_container_width=True):
+                            conn = sqlite3.connect(PATIENTS_DB)
+                            c = conn.cursor()
+                            c.execute(f"DELETE FROM patients WHERE id IN ({','.join(['?']*len(selected_ids))})", selected_ids)
+                            conn.commit()
+                            conn.close()
+                            st.session_state['select_all_state'] = False
+                            st.session_state['editor_key_counter'] += 1
+                            st.success("Selected patient records deleted securely.")
+                            st.rerun()
+                    with exp_col:
+                        export_selected_df = history_df.loc[selected_labels][['timestamp', 'patient_name', 'age', 'Sex', 'weight', 'prediction_str', 'Confidence']]
+                        st.download_button(
+                            f"⬇️ Download Selected ({len(selected_ids)} CSV)",
+                            data=export_selected_df.to_csv(index=False).encode("utf-8"),
+                            file_name="selected_heart_ai_records.csv",
+                            mime="text/csv",
+                            use_container_width=True,
+                        )
+
+                if st.session_state.pop("export_records_hint", False):
+                    st.info("Export is ready below.")
+
+                export_df = history_df[['timestamp', 'patient_name', 'age', 'Sex', 'weight', 'prediction_str', 'Confidence']]
+                st.download_button(
+                    "Download Displayed Records (CSV)",
+                    data=export_df.to_csv(index=False).encode("utf-8"),
+                    file_name="filtered_heart_ai_records.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
             st.markdown("</div>", unsafe_allow_html=True)
 
     # ==========================================
@@ -826,7 +1242,7 @@ else:
         try:
             df = pd.read_csv("data/heart.csv")
             st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
-            st.dataframe(df.head(100), use_container_width=True)
+            st.dataframe(df.head(100), width="stretch")
             st.markdown("</div>", unsafe_allow_html=True)
             
             c1, c2 = st.columns(2)
@@ -837,14 +1253,14 @@ else:
                 target_counts.columns = ['Status', 'Count']
                 fig_pie = px.pie(target_counts, values='Count', names='Status', hole=0.4, color_discrete_sequence=px.colors.qualitative.Safe)
                 fig_pie.update_layout(height=300, margin=dict(l=10, r=10, t=30, b=10), paper_bgcolor="rgba(0,0,0,0)")
-                st.plotly_chart(fig_pie, use_container_width=True)
+                st.plotly_chart(fig_pie, width="stretch")
                 st.markdown("</div>", unsafe_allow_html=True)
             with c2:
                 st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
                 st.subheader("Age vs Max Heart Rate")
                 fig_scatter = px.scatter(df, x="age", y="thalach", color="target", color_continuous_scale='RdBu')
                 fig_scatter.update_layout(height=300, margin=dict(l=10, r=10, t=30, b=10), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-                st.plotly_chart(fig_scatter, use_container_width=True)
+                st.plotly_chart(fig_scatter, width="stretch")
                 st.markdown("</div>", unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Explorer Error: {e}")
