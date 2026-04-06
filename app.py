@@ -947,13 +947,14 @@ else:
                 </div>
             """, unsafe_allow_html=True)
         else:
-            status_text = "Secrets Missing" if "supabase" not in st.secrets and "connections" not in st.secrets else "Connection Error"
+            found_keys = list(st.secrets.to_dict().keys()) if hasattr(st.secrets, "to_dict") else list(st.secrets.keys())
+            status_text = "Secrets Empty" if not found_keys else f"Keys: {', '.join(found_keys)}"
             st.markdown(f"""
                 <div style='display:flex; align-items:center; gap:8px; background:#fef2f2; border-radius:10px; padding:10px; border:1px solid #fecaca;'>
                     <span style='color:#dc2626; font-size:1.4rem;'>●</span>
                     <div style='display:flex; flex-direction:column; line-height:1.2;'>
                         <span style='font-size:0.65rem; color:#dc2626; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;'>{status_text}</span>
-                        <span style='font-size:0.85rem; color:#991b1b; font-weight:700;'>📁 Local SQLite</span>
+                        <span style='font-size:0.85rem; color:#991b1b; font-weight:700;'>📁 Local SQLite Fallback</span>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
