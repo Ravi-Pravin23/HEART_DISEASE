@@ -766,15 +766,7 @@ else:
                 st.session_state["export_records_hint"] = True
                 _set_page("📂 Records")
 
-        if st.button("Test n8n", width="stretch", key="qa_test_n8n"):
-            try:
-                res = requests.post(st.session_state["n8n_webhook_url"], json={"test": True}, timeout=3)
-                if res.status_code == 200:
-                    st.success("Connected to n8n.")
-                else:
-                    st.error(f"n8n status: {res.status_code}")
-            except Exception:
-                st.error("Could not reach n8n.")
+        # n8n test button removed per user request
         
         st.markdown("<div style='margin-top: 2rem;'></div>", unsafe_allow_html=True)
         display_name = st.session_state.get('full_name', st.session_state.get('user_name', ''))
@@ -804,20 +796,15 @@ else:
         st.title("System Integration Settings")
         st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
         st.subheader("n8n Automated Alerts")
-        st.session_state['n8n_webhook_url'] = st.text_input(
+        
+        # Use a key to ensure state persistence
+        # Webhook URL input kept for configuration
+        new_url = st.text_input(
             "Webhook Endpoint URL",
-            value=st.session_state['n8n_webhook_url'],
+            value=st.session_state.get('n8n_webhook_url', "http://localhost:5678/webhook/heart-alert"),
             help="n8n webhook that receives patient data and sends the email."
         )
-        if st.button("Test Connection", width="stretch"):
-            try:
-                res = requests.post(st.session_state['n8n_webhook_url'], json={"test": True}, timeout=3)
-                if res.status_code == 200:
-                    st.success("✅ Connected to n8n!")
-                else:
-                    st.error(f"Reached n8n but got status: {res.status_code}")
-            except Exception:
-                st.error("❌ Could not reach n8n. Make sure it's running.")
+        st.session_state['n8n_webhook_url'] = new_url
         st.markdown("</div>", unsafe_allow_html=True)
 
     # PAGE 1: 🩺 DIAGNOSTIC ASSESSMENT
