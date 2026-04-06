@@ -203,12 +203,16 @@ def send_smtp_email(to_email, subject, body, attachment_bytes=None, attachment_n
 
 # --- 1. DATABASE SETUP (FR-1: User Registration) ---
 def get_db_connection():
-    """Returns a PostgreSQL connection if secrets are configured, else SQLite."""
+    """Returns Supabase credentials (dict) OR a SQL connection, the mode, and any error message."""
     err_msg = ""
     try:
-        # Check if secrets contain the postgresql URL
+        # Check if secrets contain Supabase HTTP API credentials
+        if "supabase" in st.secrets:
+            # We return credentials as a dict to use with requests manually
+            return dict(st.secrets["supabase"]), "supabase", ""
+            
+        # Fallback to direct PostgreSQL
         if "connections" in st.secrets and "postgresql" in st.secrets["connections"]:
-            # Test the connection to ensure it works
             conn = st.connection("postgresql", type="sql")
             return conn, "postgresql", ""
     except Exception as e:
@@ -219,7 +223,10 @@ def get_db_connection():
 
 def init_db():
     conn, mode, _ = get_db_connection()
-    if mode == "postgresql":
+    if mode == "supabase":
+        # Tables must be created manually in Supabase dashboard or SQL editor.
+        return
+    elif mode == "postgresql":
         with conn.session as s:
             s.execute("""CREATE TABLE IF NOT EXISTS users (
                 username TEXT PRIMARY KEY,
@@ -239,7 +246,10 @@ def init_db():
 
 def init_patients_db():
     conn, mode, _ = get_db_connection()
-    if mode == "postgresql":
+    if mode == "supabase":
+        # Tables must be created manually in Supabase dashboard or SQL editor.
+        return
+    elif mode == "postgresql":
         with conn.session as s:
             s.execute("""CREATE TABLE IF NOT EXISTS patients (
                 id SERIAL PRIMARY KEY,
@@ -273,7 +283,24 @@ def init_patients_db():
 
 def save_patient_record(doctor, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob):
     conn, mode, _ = get_db_connection()
-    if mode == "postgresql":
+    if mode == "supabase":
+        url = f"{conn['url']}/rest/v1/patients"
+        headers = {
+            "apikey": conn['key'], 
+            "Authorization": f"Bearer {conn['key']}", 
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+        }
+        data = {
+            "doctor_name": doctor, "patient_name": patient_name, "age": int(age), "sex": int(sex), 
+            "cp": int(cp), "trestbps": int(trestbps), "chol": int(chol), "fbs": int(fbs), 
+            "restecg": int(restecg), "thalach": int(thalach), "exang": int(exang), 
+            "oldpeak": float(oldpeak), "slope": int(slope), "ca": int(ca), "thal": int(thal), 
+            "weight": int(weight), "prediction_str": pred_str, "probability": float(prob)
+        }
+        res = requests.post(url, json=data, headers=headers)
+        if not res.ok: raise Exception(res.text)
+    elif mode == "postgresql":
         sql = """INSERT INTO patients (
             doctor_name, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, 
             thalach, exang, oldpeak, slope, ca, thal, weight, prediction_str, probability
@@ -300,7 +327,16 @@ def save_patient_record(doctor, patient_name, age, sex, cp, trestbps, chol, fbs,
 
 def load_users():
     conn, mode, _ = get_db_connection()
-    if mode == "postgresql":
+    if mode == "supabase":
+        url = f"{conn['url']}/rest/v1/users?select=username,password,full_name"
+        headers = {"apikey": conn['key'], "Authorization": f"Bearer {conn['key']}"}
+        res = requests.get(url, headers=headers)
+        if not res.ok: return {}, {}
+        data = res.json()
+        users = {row['username']: row['password'] for row in data}
+        full_names = {row['username']: (row['full_name'] if row['full_name'] else row['username']) for row in data}
+        return users, full_names
+    elif mode == "postgresql":
         with conn.session as s:
             res = s.execute("SELECT username, password, full_name FROM users").fetchall()
             users = {row[0]: row[1] for row in res}
@@ -324,7 +360,18 @@ def save_user(username, password, full_name=None):
     conn, mode, _ = get_db_connection()
     hashed_pwd = hash_password(password)
     
-    if mode == "postgresql":
+    if mode == "supabase":
+        url = f"{conn['url']}/rest/v1/users"
+        headers = {
+            "apikey": conn['key'], 
+            "Authorization": f"Bearer {conn['key']}", 
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates"
+        }
+        data = {"username": username, "password": hashed_pwd, "full_name": full_name}
+        res = requests.post(url, json=data, headers=headers)
+        if not res.ok: raise Exception(res.text)
+    elif mode == "postgresql":
         sql = """INSERT INTO users (username, password, full_name) VALUES (:u, :p, :f)
                  ON CONFLICT (username) DO UPDATE SET password = :p, full_name = :f"""
         with conn.session as s:
@@ -888,18 +935,19 @@ else:
         # --- Database Status Indicator ---
         st.markdown("<hr style='margin: 1.5rem 0 1rem 0; border: 0; border-top: 1px dashed #e2e8f0;' />", unsafe_allow_html=True)
         conn, mode, err = get_db_connection()
-        if mode == "postgresql":
-            st.markdown("""
+        if mode in ["postgresql", "supabase"]:
+            status_label = "🌐 Supabase (API)" if mode == "supabase" else "🌐 Cloud Database"
+            st.markdown(f"""
                 <div style='display:flex; align-items:center; gap:8px; background:#f0fdf4; border-radius:10px; padding:10px; border:1px solid #bbf7d0;'>
                     <span style='color:#16a34a; font-size:1.4rem;'>●</span>
                     <div style='display:flex; flex-direction:column; line-height:1.2;'>
                         <span style='font-size:0.65rem; color:#16a34a; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;'>Active Connection</span>
-                        <span style='font-size:0.85rem; color:#166534; font-weight:700;'>🌐 Cloud Database</span>
+                        <span style='font-size:0.85rem; color:#166534; font-weight:700;'>{status_label}</span>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
         else:
-            status_text = "Secrets Missing" if "connections" not in st.secrets else "Connection Error"
+            status_text = "Secrets Missing" if "supabase" not in st.secrets and "connections" not in st.secrets else "Connection Error"
             st.markdown(f"""
                 <div style='display:flex; align-items:center; gap:8px; background:#fef2f2; border-radius:10px; padding:10px; border:1px solid #fecaca;'>
                     <span style='color:#dc2626; font-size:1.4rem;'>●</span>
@@ -1215,7 +1263,12 @@ else:
         conn, mode, _ = get_db_connection()
         query = "SELECT id, timestamp, patient_name, age, sex, weight, trestbps, chol, prediction_str, probability FROM patients WHERE doctor_name = :d ORDER BY timestamp DESC"
         
-        if mode == "postgresql":
+        if mode == "supabase":
+            url = f"{conn['url']}/rest/v1/patients?doctor_name=eq.{st.session_state['user_name']}&order=timestamp.desc"
+            headers = {"apikey": conn['key'], "Authorization": f"Bearer {conn['key']}"}
+            res = requests.get(url, headers=headers)
+            history_df = pd.DataFrame(res.json()) if res.ok else pd.DataFrame()
+        elif mode == "postgresql":
             # with conn.session as s:
             #     history_df = pd.read_sql_query(query, s.connection(), params={"d": st.session_state['user_name']})
             history_df = conn.query(query.replace(":d", f"'{st.session_state['user_name']}'"), ttl=0)
@@ -1283,7 +1336,12 @@ else:
                     with del_col:
                         if st.button(f"🗑️ Delete Selected ({len(selected_ids)})", type="primary", use_container_width=True):
                             conn, mode, _ = get_db_connection()
-                            if mode == "postgresql":
+                            if mode == "supabase":
+                                url = f"{conn['url']}/rest/v1/patients?id=in.({','.join([str(i) for i in selected_ids])})"
+                                headers = {"apikey": conn['key'], "Authorization": f"Bearer {conn['key']}"}
+                                res = requests.delete(url, headers=headers)
+                                if not res.ok: st.error(res.text)
+                            elif mode == "postgresql":
                                 sql = f"DELETE FROM patients WHERE id IN ({','.join([str(i) for i in selected_ids])})"
                                 with conn.session as s:
                                     s.execute(sql)
