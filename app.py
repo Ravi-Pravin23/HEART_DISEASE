@@ -202,93 +202,141 @@ def send_smtp_email(to_email, subject, body, attachment_bytes=None, attachment_n
         return False, str(e)
 
 # --- 1. DATABASE SETUP (FR-1: User Registration) ---
-DB_NAME = "data/users.db"
-PATIENTS_DB = "data/patients.db"
+def get_db_connection():
+    """Returns a PostgreSQL connection if secrets are configured, else SQLite."""
+    try:
+        # Check if secrets contain the postgresql URL
+        if "connections" in st.secrets and "postgresql" in st.secrets["connections"]:
+            return st.connection("postgresql", type="sql"), "postgresql"
+    except:
+        pass
+    
+    # Fallback to SQLite
+    return sqlite3.connect("data/patients.db", check_same_thread=False), "sqlite"
 
 def init_db():
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)''')
-    try:
-        c.execute("ALTER TABLE users ADD COLUMN full_name TEXT")
-    except sqlite3.OperationalError:
-        pass
-    conn.commit()
-    conn.close()
+    conn, mode = get_db_connection()
+    if mode == "postgresql":
+        with conn.session as s:
+            s.execute("""CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                password TEXT,
+                full_name TEXT
+            )""")
+            s.commit()
+    else:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)''')
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN full_name TEXT")
+        except sqlite3.OperationalError:
+            pass
+        conn.commit()
+        conn.close()
 
 def init_patients_db():
-    conn = sqlite3.connect(PATIENTS_DB)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS patients (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        doctor_name TEXT,
-        age INTEGER, sex INTEGER, cp INTEGER, trestbps INTEGER, chol INTEGER,
-        fbs INTEGER, restecg INTEGER, thalach INTEGER, exang INTEGER,
-        oldpeak REAL, slope INTEGER, ca INTEGER, thal INTEGER, weight INTEGER,
-        prediction_str TEXT, probability REAL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )''')
-    
-    # Simple migration: add weight column if it doesn't exist
-    try:
-        c.execute("ALTER TABLE patients ADD COLUMN weight INTEGER DEFAULT 70")
-    except sqlite3.OperationalError:
-        pass # Already exists
+    conn, mode = get_db_connection()
+    if mode == "postgresql":
+        with conn.session as s:
+            s.execute("""CREATE TABLE IF NOT EXISTS patients (
+                id SERIAL PRIMARY KEY,
+                doctor_name TEXT,
+                patient_name TEXT,
+                age INTEGER, sex INTEGER, cp INTEGER, trestbps INTEGER, chol INTEGER,
+                fbs INTEGER, restecg INTEGER, thalach INTEGER, exang INTEGER,
+                oldpeak REAL, slope INTEGER, ca INTEGER, thal INTEGER, weight INTEGER,
+                prediction_str TEXT, probability REAL, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""")
+            s.commit()
+    else:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS patients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            doctor_name TEXT,
+            age INTEGER, sex INTEGER, cp INTEGER, trestbps INTEGER, chol INTEGER,
+            fbs INTEGER, restecg INTEGER, thalach INTEGER, exang INTEGER,
+            oldpeak REAL, slope INTEGER, ca INTEGER, thal INTEGER, weight INTEGER,
+            prediction_str TEXT, probability REAL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )''')
         
-    # Migration: add patient_name column
-    try:
-        c.execute("ALTER TABLE patients ADD COLUMN patient_name TEXT")
-    except sqlite3.OperationalError:
-        pass # Already exists
-    
-    conn.commit()
-    conn.close()
+        try: c.execute("ALTER TABLE patients ADD COLUMN weight INTEGER DEFAULT 70")
+        except: pass
+            
+        try: c.execute("ALTER TABLE patients ADD COLUMN patient_name TEXT")
+        except: pass
+        
+        conn.commit()
+        conn.close()
 
 def save_patient_record(doctor, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob):
-    conn = sqlite3.connect(PATIENTS_DB)
-    c = conn.cursor()
-    c.execute('''INSERT INTO patients (
+    conn, mode = get_db_connection()
+    sql = '''INSERT INTO patients (
         doctor_name, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, 
         thalach, exang, oldpeak, slope, ca, thal, weight, prediction_str, probability
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-    (doctor, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob))
-    conn.commit()
-    conn.close()
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
+    
+    if mode == "postgresql":
+        # Adjust placeholders for SQLAlchemy
+        sql = sql.replace("?", ":")
+        values = {
+            "doctor_name": doctor, "patient_name": patient_name, "age": age, "sex": sex, "cp": cp, 
+            "trestbps": trestbps, "chol": chol, "fbs": fbs, "restecg": restecg, "thalach": thalach, 
+            "exang": exang, "oldpeak": oldpeak, "slope": slope, "ca": ca, "thal": thal, 
+            "weight": weight, "prediction_str": pred_str, "probability": prob
+        }
+        with conn.session as s:
+            s.execute(sql, values)
+            s.commit()
+    else:
+        c = conn.cursor()
+        c.execute(sql.replace(":", "?"), (doctor, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob))
+        conn.commit()
+        conn.close()
 
 def load_users():
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute("SELECT username, password FROM users")
-    users = {row[0]: row[1] for row in c.fetchall()}
-    
-    full_names = {}
-    try:
-        c.execute("SELECT username, full_name FROM users")
-        full_names = {row[0]: (row[1] if row[1] else row[0]) for row in c.fetchall()}
-    except sqlite3.OperationalError:
-        full_names = {k: k for k in users.keys()}
+    conn, mode = get_db_connection()
+    if mode == "postgresql":
+        with conn.session as s:
+            res = s.execute("SELECT username, password, full_name FROM users").fetchall()
+            users = {row[0]: row[1] for row in res}
+            full_names = {row[0]: (row[2] if row[2] else row[0]) for row in res}
+            return users, full_names
+    else:
+        c = conn.cursor()
+        c.execute("SELECT username, password FROM users")
+        users = {row[0]: row[1] for row in c.fetchall()}
         
-    conn.close()
-    return users, full_names
+        full_names = {}
+        try:
+            c.execute("SELECT username, full_name FROM users")
+            full_names = {row[0]: (row[1] if row[1] else row[0]) for row in c.fetchall()}
+        except sqlite3.OperationalError:
+            full_names = {k: k for k in users.keys()}
+        conn.close()
+        return users, full_names
 
 def save_user(username, password, full_name=None):
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    if full_name:
-        try:
-            c.execute("REPLACE INTO users (username, password, full_name) VALUES (?, ?, ?)", (username, hash_password(password), full_name))
-        except sqlite3.OperationalError:
-            c.execute("REPLACE INTO users (username, password) VALUES (?, ?)", (username, hash_password(password)))
+    conn, mode = get_db_connection()
+    hashed_pwd = hash_password(password)
+    
+    if mode == "postgresql":
+        sql = """INSERT INTO users (username, password, full_name) VALUES (:u, :p, :f)
+                 ON CONFLICT (username) DO UPDATE SET password = :p, full_name = :f"""
+        with conn.session as s:
+            s.execute(sql, {"u": username, "p": hashed_pwd, "f": full_name})
+            s.commit()
     else:
-        c.execute("REPLACE INTO users (username, password) VALUES (?, ?)", (username, hash_password(password)))
-    conn.commit()
-    conn.close()
+        c = conn.cursor()
+        c.execute("REPLACE INTO users (username, password, full_name) VALUES (?, ?, ?)", (username, hashed_pwd, full_name))
+        conn.commit()
+        conn.close()
 
 def migrate_json_to_sqlite():
     if os.path.exists("data/users.json"):
         with open("data/users.json", "r") as f:
             try:
                 old_users = json.load(f)
-                conn = sqlite3.connect(DB_NAME)
+                conn = sqlite3.connect("data/patients.db")
                 c = conn.cursor()
                 for uname, pwd in old_users.items():
                     c.execute("INSERT OR IGNORE INTO users (username, password) VALUES (?, ?)", (uname, pwd))
@@ -832,6 +880,30 @@ else:
             st.session_state['logged_in'] = False
             st.rerun()
 
+        # --- Database Status Indicator ---
+        st.markdown("<hr style='margin: 1.5rem 0 1rem 0; border: 0; border-top: 1px dashed #e2e8f0;' />", unsafe_allow_html=True)
+        conn, mode = get_db_connection()
+        if mode == "postgresql":
+            st.markdown("""
+                <div style='display:flex; align-items:center; gap:8px; background:#f0fdf4; border-radius:10px; padding:10px; border:1px solid #bbf7d0;'>
+                    <span style='color:#16a34a; font-size:1.4rem;'>●</span>
+                    <div style='display:flex; flex-direction:column; line-height:1.2;'>
+                        <span style='font-size:0.65rem; color:#16a34a; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;'>Active Connection</span>
+                        <span style='font-size:0.85rem; color:#166534; font-weight:700;'>🌐 Cloud Database</span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+                <div style='display:flex; align-items:center; gap:8px; background:#fef2f2; border-radius:10px; padding:10px; border:1px solid #fecaca;'>
+                    <span style='color:#dc2626; font-size:1.4rem;'>●</span>
+                    <div style='display:flex; flex-direction:column; line-height:1.2;'>
+                        <span style='font-size:0.65rem; color:#dc2626; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;'>Offline Mode</span>
+                        <span style='font-size:0.85rem; color:#991b1b; font-weight:700;'>📁 Local SQLite</span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
     menu_selection = st.session_state["active_page"]
 
     # PAGE 1: 🩺 DIAGNOSTIC ASSESSMENT
@@ -1130,10 +1202,17 @@ else:
     elif menu_selection == "📂 Records":
         st.title("Digital Health Records")
         st.markdown(f"<p style='color:#6b7280; font-size: 1.1rem; margin-top:-1rem;'>Secure access to diagnostic history for Dr. {display_name}</p>", unsafe_allow_html=True)
-        conn = sqlite3.connect(PATIENTS_DB)
-        # Fetching id as well so we can uniquely identify records to delete
-        history_df = pd.read_sql_query("SELECT id, timestamp, patient_name, age, sex, weight, trestbps, chol, prediction_str, probability FROM patients WHERE doctor_name = ? ORDER BY timestamp DESC", conn, params=(st.session_state['user_name'],))
-        conn.close()
+        
+        conn, mode = get_db_connection()
+        query = "SELECT id, timestamp, patient_name, age, sex, weight, trestbps, chol, prediction_str, probability FROM patients WHERE doctor_name = :d ORDER BY timestamp DESC"
+        
+        if mode == "postgresql":
+            # with conn.session as s:
+            #     history_df = pd.read_sql_query(query, s.connection(), params={"d": st.session_state['user_name']})
+            history_df = conn.query(query.replace(":d", f"'{st.session_state['user_name']}'"), ttl=0)
+        else:
+            history_df = pd.read_sql_query(query.replace(":d", "?"), conn, params=(st.session_state['user_name'],))
+            conn.close()
         
         if history_df.empty:
             st.info("No clinical records found for this specialist session.")
@@ -1194,11 +1273,17 @@ else:
                     del_col, exp_col = st.columns(2)
                     with del_col:
                         if st.button(f"🗑️ Delete Selected ({len(selected_ids)})", type="primary", use_container_width=True):
-                            conn = sqlite3.connect(PATIENTS_DB)
-                            c = conn.cursor()
-                            c.execute(f"DELETE FROM patients WHERE id IN ({','.join(['?']*len(selected_ids))})", selected_ids)
-                            conn.commit()
-                            conn.close()
+                            conn, mode = get_db_connection()
+                            if mode == "postgresql":
+                                sql = f"DELETE FROM patients WHERE id IN ({','.join([str(i) for i in selected_ids])})"
+                                with conn.session as s:
+                                    s.execute(sql)
+                                    s.commit()
+                            else:
+                                c = conn.cursor()
+                                c.execute(f"DELETE FROM patients WHERE id IN ({','.join(['?']*len(selected_ids))})", selected_ids)
+                                conn.commit()
+                                conn.close()
                             st.session_state['select_all_state'] = False
                             st.session_state['editor_key_counter'] += 1
                             st.success("Selected patient records deleted securely.")
