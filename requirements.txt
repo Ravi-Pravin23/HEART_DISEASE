@@ -7,3 +7,5 @@ fpdf
 requests
 xgboost
 scikit-learn
+psycopg2-binary
+sqlalchemy
