@@ -204,18 +204,21 @@ def send_smtp_email(to_email, subject, body, attachment_bytes=None, attachment_n
 # --- 1. DATABASE SETUP (FR-1: User Registration) ---
 def get_db_connection():
     """Returns a PostgreSQL connection if secrets are configured, else SQLite."""
+    err_msg = ""
     try:
         # Check if secrets contain the postgresql URL
         if "connections" in st.secrets and "postgresql" in st.secrets["connections"]:
-            return st.connection("postgresql", type="sql"), "postgresql"
-    except:
-        pass
+            # Test the connection to ensure it works
+            conn = st.connection("postgresql", type="sql")
+            return conn, "postgresql", ""
+    except Exception as e:
+        err_msg = str(e)
     
     # Fallback to SQLite
-    return sqlite3.connect("data/patients.db", check_same_thread=False), "sqlite"
+    return sqlite3.connect("data/patients.db", check_same_thread=False), "sqlite", err_msg
 
 def init_db():
-    conn, mode = get_db_connection()
+    conn, mode, _ = get_db_connection()
     if mode == "postgresql":
         with conn.session as s:
             s.execute("""CREATE TABLE IF NOT EXISTS users (
@@ -235,7 +238,7 @@ def init_db():
         conn.close()
 
 def init_patients_db():
-    conn, mode = get_db_connection()
+    conn, mode, _ = get_db_connection()
     if mode == "postgresql":
         with conn.session as s:
             s.execute("""CREATE TABLE IF NOT EXISTS patients (
@@ -269,15 +272,13 @@ def init_patients_db():
         conn.close()
 
 def save_patient_record(doctor, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob):
-    conn, mode = get_db_connection()
-    sql = '''INSERT INTO patients (
-        doctor_name, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, 
-        thalach, exang, oldpeak, slope, ca, thal, weight, prediction_str, probability
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
-    
+    conn, mode, _ = get_db_connection()
     if mode == "postgresql":
-        # Adjust placeholders for SQLAlchemy
-        sql = sql.replace("?", ":")
+        sql = """INSERT INTO patients (
+            doctor_name, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, 
+            thalach, exang, oldpeak, slope, ca, thal, weight, prediction_str, probability
+        ) VALUES (:doctor_name, :patient_name, :age, :sex, :cp, :trestbps, :chol, :fbs, :restecg, 
+                  :thalach, :exang, :oldpeak, :slope, :ca, :thal, :weight, :prediction_str, :probability)"""
         values = {
             "doctor_name": doctor, "patient_name": patient_name, "age": age, "sex": sex, "cp": cp, 
             "trestbps": trestbps, "chol": chol, "fbs": fbs, "restecg": restecg, "thalach": thalach, 
@@ -288,13 +289,17 @@ def save_patient_record(doctor, patient_name, age, sex, cp, trestbps, chol, fbs,
             s.execute(sql, values)
             s.commit()
     else:
+        sql = '''INSERT INTO patients (
+            doctor_name, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, 
+            thalach, exang, oldpeak, slope, ca, thal, weight, prediction_str, probability
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
         c = conn.cursor()
-        c.execute(sql.replace(":", "?"), (doctor, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob))
+        c.execute(sql, (doctor, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob))
         conn.commit()
         conn.close()
 
 def load_users():
-    conn, mode = get_db_connection()
+    conn, mode, _ = get_db_connection()
     if mode == "postgresql":
         with conn.session as s:
             res = s.execute("SELECT username, password, full_name FROM users").fetchall()
@@ -316,7 +321,7 @@ def load_users():
         return users, full_names
 
 def save_user(username, password, full_name=None):
-    conn, mode = get_db_connection()
+    conn, mode, _ = get_db_connection()
     hashed_pwd = hash_password(password)
     
     if mode == "postgresql":
@@ -882,7 +887,7 @@ else:
 
         # --- Database Status Indicator ---
         st.markdown("<hr style='margin: 1.5rem 0 1rem 0; border: 0; border-top: 1px dashed #e2e8f0;' />", unsafe_allow_html=True)
-        conn, mode = get_db_connection()
+        conn, mode, err = get_db_connection()
         if mode == "postgresql":
             st.markdown("""
                 <div style='display:flex; align-items:center; gap:8px; background:#f0fdf4; border-radius:10px; padding:10px; border:1px solid #bbf7d0;'>
@@ -894,15 +899,19 @@ else:
                 </div>
             """, unsafe_allow_html=True)
         else:
-            st.markdown("""
+            status_text = "Secrets Missing" if "connections" not in st.secrets else "Connection Error"
+            st.markdown(f"""
                 <div style='display:flex; align-items:center; gap:8px; background:#fef2f2; border-radius:10px; padding:10px; border:1px solid #fecaca;'>
                     <span style='color:#dc2626; font-size:1.4rem;'>●</span>
                     <div style='display:flex; flex-direction:column; line-height:1.2;'>
-                        <span style='font-size:0.65rem; color:#dc2626; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;'>Offline Mode</span>
+                        <span style='font-size:0.65rem; color:#dc2626; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;'>{status_text}</span>
                         <span style='font-size:0.85rem; color:#991b1b; font-weight:700;'>📁 Local SQLite</span>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
+            if err:
+                with st.expander("Show connection error"):
+                    st.code(err, language="text")
 
     menu_selection = st.session_state["active_page"]
 
@@ -1203,7 +1212,7 @@ else:
         st.title("Digital Health Records")
         st.markdown(f"<p style='color:#6b7280; font-size: 1.1rem; margin-top:-1rem;'>Secure access to diagnostic history for Dr. {display_name}</p>", unsafe_allow_html=True)
         
-        conn, mode = get_db_connection()
+        conn, mode, _ = get_db_connection()
         query = "SELECT id, timestamp, patient_name, age, sex, weight, trestbps, chol, prediction_str, probability FROM patients WHERE doctor_name = :d ORDER BY timestamp DESC"
         
         if mode == "postgresql":
@@ -1273,7 +1282,7 @@ else:
                     del_col, exp_col = st.columns(2)
                     with del_col:
                         if st.button(f"🗑️ Delete Selected ({len(selected_ids)})", type="primary", use_container_width=True):
-                            conn, mode = get_db_connection()
+                            conn, mode, _ = get_db_connection()
                             if mode == "postgresql":
                                 sql = f"DELETE FROM patients WHERE id IN ({','.join([str(i) for i in selected_ids])})"
                                 with conn.session as s:
