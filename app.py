@@ -873,11 +873,7 @@ else:
         st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
         st.markdown("<h3 style='margin-top: 0;'>Patient Demographics & Vitals</h3>", unsafe_allow_html=True)
         
-        name_col, email_col = st.columns([1, 1.5])
-        with name_col:
-            patient_name = st.text_input("Patient Full Name", placeholder="e.g., John Doe")
-        with email_col:
-            patient_email = st.text_input("Patient Notification Email", placeholder="e.g., patient@example.com", help="Report will be sent here.")
+        patient_name = st.text_input("Patient Full Name", placeholder="e.g., John Doe")
         
         st.markdown("<hr style='margin: 1rem 0; border: 0; border-top: 1px solid #e5e7eb;' />", unsafe_allow_html=True)
         
@@ -961,43 +957,7 @@ else:
                 thalach, exang, oldpeak, slope, ca, thal, weight, disease_name, prob
             )
 
-            # --- Send Report to Patient ---
-            if patient_email:
-                if st.session_state.get('email_provider') == "n8n (Automation)":
-                    try:
-                        payload = {
-                            "patient_name": patient_name,
-                            "patient_email": patient_email,
-                            "patient_age": age,
-                            "risk_probability": f"{prob*100:.2f}%",
-                            "disease_type": disease_name,
-                            "diagnosed_by": st.session_state['user_name']
-                        }
-                        requests.post(st.session_state['n8n_webhook_url'], json=payload, timeout=4)
-                        st.success(f"✅ Report sent via n8n to {patient_email}")
-                    except:
-                        st.info("n8n unreachable — check Settings.")
-                else:
-                    # SMTP (Direct)
-                    email_body = f"""
-                        <h3>Heart AI Clinical Assessment</h3>
-                        <p>Hello <b>{patient_name}</b>,</p>
-                        <p>Your cardiovascular risk assessment for <b>{disease_name}</b> is complete.</p>
-                        <p><b>Confidence Score:</b> {prob*100:.2f}%<br>
-                        <b>Attending Physician:</b> Dr. {st.session_state['user_name']}</p>
-                        <p><i>Please find your official diagnostic protocol PDF attached to this email.</i></p>
-                    """
-                    success, error = send_smtp_email(
-                        patient_email,
-                        f"Heart AI Diagnostic Report - {patient_name}",
-                        email_body,
-                        attachment_bytes=pdf_bytes,
-                        attachment_name=f"Heart_AI_{patient_name.replace(' ', '_')}.pdf"
-                    )
-                    if success:
-                        st.success(f"✅ Report sent directly to **{patient_email}**!")
-                    else:
-                        st.warning(f"⚠️ SMTP Error: {error}. Check Settings.")
+
         
         # --- Results Display (Persistent) ---
         if 'last_prediction' in st.session_state:
