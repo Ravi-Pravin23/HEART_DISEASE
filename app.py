@@ -203,74 +203,185 @@ def send_smtp_email(to_email, subject, body, attachment_bytes=None, attachment_n
 
 # --- 1. DATABASE SETUP (FR-1: User Registration) ---
 def get_db_connection():
-    """Returns a SQLite connection to patients.db."""
-    return sqlite3.connect("data/patients.db", check_same_thread=False), "sqlite", ""
+    """Returns Supabase credentials (dict) OR a SQL connection, the mode, and any error message."""
+    err_msg = ""
+    try:
+        # Check if secrets contain Supabase HTTP API credentials
+        if "supabase" in st.secrets:
+            # We return credentials as a dict to use with requests manually
+            return dict(st.secrets["supabase"]), "supabase", ""
+            
+        # Fallback to direct PostgreSQL
+        if "connections" in st.secrets and "postgresql" in st.secrets["connections"]:
+            conn = st.connection("postgresql", type="sql")
+            return conn, "postgresql", ""
+    except Exception as e:
+        err_msg = str(e)
+    
+    # Fallback to SQLite
+    return sqlite3.connect("data/patients.db", check_same_thread=False), "sqlite", err_msg
 
 def init_db():
     conn, mode, _ = get_db_connection()
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)''')
-    try:
-        c.execute("ALTER TABLE users ADD COLUMN full_name TEXT")
-    except sqlite3.OperationalError:
-        pass
-    conn.commit()
-    conn.close()
+    if mode == "supabase":
+        # Tables must be created manually in Supabase dashboard or SQL editor.
+        return
+    elif mode == "postgresql":
+        with conn.session as s:
+            s.execute("""CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                password TEXT,
+                full_name TEXT
+            )""")
+            s.commit()
+    else:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)''')
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN full_name TEXT")
+        except sqlite3.OperationalError:
+            pass
+        conn.commit()
+        conn.close()
 
 def init_patients_db():
     conn, mode, _ = get_db_connection()
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS patients (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        doctor_name TEXT,
-        age INTEGER, sex INTEGER, cp INTEGER, trestbps INTEGER, chol INTEGER,
-        fbs INTEGER, restecg INTEGER, thalach INTEGER, exang INTEGER,
-        oldpeak REAL, slope INTEGER, ca INTEGER, thal INTEGER, weight INTEGER,
-        prediction_str TEXT, probability REAL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )''')
-    
-    try: c.execute("ALTER TABLE patients ADD COLUMN weight INTEGER DEFAULT 70")
-    except: pass
+    if mode == "supabase":
+        # Tables must be created manually in Supabase dashboard or SQL editor.
+        return
+    elif mode == "postgresql":
+        with conn.session as s:
+            s.execute("""CREATE TABLE IF NOT EXISTS patients (
+                id SERIAL PRIMARY KEY,
+                doctor_name TEXT,
+                patient_name TEXT,
+                age INTEGER, sex INTEGER, cp INTEGER, trestbps INTEGER, chol INTEGER,
+                fbs INTEGER, restecg INTEGER, thalach INTEGER, exang INTEGER,
+                oldpeak REAL, slope INTEGER, ca INTEGER, thal INTEGER, weight INTEGER,
+                prediction_str TEXT, probability REAL, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""")
+            s.commit()
+    else:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS patients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            doctor_name TEXT,
+            age INTEGER, sex INTEGER, cp INTEGER, trestbps INTEGER, chol INTEGER,
+            fbs INTEGER, restecg INTEGER, thalach INTEGER, exang INTEGER,
+            oldpeak REAL, slope INTEGER, ca INTEGER, thal INTEGER, weight INTEGER,
+            prediction_str TEXT, probability REAL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )''')
         
-    try: c.execute("ALTER TABLE patients ADD COLUMN patient_name TEXT")
-    except: pass
-    
-    conn.commit()
-    conn.close()
+        try: c.execute("ALTER TABLE patients ADD COLUMN weight INTEGER DEFAULT 70")
+        except: pass
+            
+        try: c.execute("ALTER TABLE patients ADD COLUMN patient_name TEXT")
+        except: pass
+        
+        conn.commit()
+        conn.close()
 
 def save_patient_record(doctor, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob):
     conn, mode, _ = get_db_connection()
-    sql = '''INSERT INTO patients (
-        doctor_name, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, 
-        thalach, exang, oldpeak, slope, ca, thal, weight, prediction_str, probability
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
-    c = conn.cursor()
-    c.execute(sql, (doctor, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob))
-    conn.commit()
-    conn.close()
+    if mode == "supabase":
+        url = f"{conn['url']}/rest/v1/patients"
+        headers = {
+            "apikey": conn['key'], 
+            "Authorization": f"Bearer {conn['key']}", 
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+        }
+        data = {
+            "doctor_name": doctor, "patient_name": patient_name, "age": int(age), "sex": int(sex), 
+            "cp": int(cp), "trestbps": int(trestbps), "chol": int(chol), "fbs": int(fbs), 
+            "restecg": int(restecg), "thalach": int(thalach), "exang": int(exang), 
+            "oldpeak": float(oldpeak), "slope": int(slope), "ca": int(ca), "thal": int(thal), 
+            "weight": int(weight), "prediction_str": pred_str, "probability": float(prob)
+        }
+        res = requests.post(url, json=data, headers=headers)
+        if not res.ok: raise Exception(res.text)
+    elif mode == "postgresql":
+        sql = """INSERT INTO patients (
+            doctor_name, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, 
+            thalach, exang, oldpeak, slope, ca, thal, weight, prediction_str, probability
+        ) VALUES (:doctor_name, :patient_name, :age, :sex, :cp, :trestbps, :chol, :fbs, :restecg, 
+                  :thalach, :exang, :oldpeak, :slope, :ca, :thal, :weight, :prediction_str, :probability)"""
+        values = {
+            "doctor_name": doctor, "patient_name": patient_name, "age": age, "sex": sex, "cp": cp, 
+            "trestbps": trestbps, "chol": chol, "fbs": fbs, "restecg": restecg, "thalach": thalach, 
+            "exang": exang, "oldpeak": oldpeak, "slope": slope, "ca": ca, "thal": thal, 
+            "weight": weight, "prediction_str": pred_str, "probability": prob
+        }
+        with conn.session as s:
+            s.execute(sql, values)
+            s.commit()
+    else:
+        sql = '''INSERT INTO patients (
+            doctor_name, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, 
+            thalach, exang, oldpeak, slope, ca, thal, weight, prediction_str, probability
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
+        c = conn.cursor()
+        c.execute(sql, (doctor, patient_name, age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, weight, pred_str, prob))
+        conn.commit()
+        conn.close()
 
 def load_users():
     conn, mode, _ = get_db_connection()
-    c = conn.cursor()
-    c.execute("SELECT username, password FROM users")
-    users = {row[0]: row[1] for row in c.fetchall()}
-    
-    full_names = {}
-    try:
-        c.execute("SELECT username, full_name FROM users")
-        full_names = {row[0]: (row[1] if row[1] else row[0]) for row in c.fetchall()}
-    except sqlite3.OperationalError:
-        full_names = {k: k for k in users.keys()}
-    conn.close()
-    return users, full_names
+    if mode == "supabase":
+        url = f"{conn['url']}/rest/v1/users?select=username,password,full_name"
+        headers = {"apikey": conn['key'], "Authorization": f"Bearer {conn['key']}"}
+        res = requests.get(url, headers=headers)
+        if not res.ok: return {}, {}
+        data = res.json()
+        users = {row['username']: row['password'] for row in data}
+        full_names = {row['username']: (row['full_name'] if row['full_name'] else row['username']) for row in data}
+        return users, full_names
+    elif mode == "postgresql":
+        with conn.session as s:
+            res = s.execute("SELECT username, password, full_name FROM users").fetchall()
+            users = {row[0]: row[1] for row in res}
+            full_names = {row[0]: (row[2] if row[2] else row[0]) for row in res}
+            return users, full_names
+    else:
+        c = conn.cursor()
+        c.execute("SELECT username, password FROM users")
+        users = {row[0]: row[1] for row in c.fetchall()}
+        
+        full_names = {}
+        try:
+            c.execute("SELECT username, full_name FROM users")
+            full_names = {row[0]: (row[1] if row[1] else row[0]) for row in c.fetchall()}
+        except sqlite3.OperationalError:
+            full_names = {k: k for k in users.keys()}
+        conn.close()
+        return users, full_names
 
 def save_user(username, password, full_name=None):
     conn, mode, _ = get_db_connection()
     hashed_pwd = hash_password(password)
-    c = conn.cursor()
-    c.execute("REPLACE INTO users (username, password, full_name) VALUES (?, ?, ?)", (username, hashed_pwd, full_name))
-    conn.commit()
-    conn.close()
+    
+    if mode == "supabase":
+        url = f"{conn['url']}/rest/v1/users"
+        headers = {
+            "apikey": conn['key'], 
+            "Authorization": f"Bearer {conn['key']}", 
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates"
+        }
+        data = {"username": username, "password": hashed_pwd, "full_name": full_name}
+        res = requests.post(url, json=data, headers=headers)
+        if not res.ok: raise Exception(res.text)
+    elif mode == "postgresql":
+        sql = """INSERT INTO users (username, password, full_name) VALUES (:u, :p, :f)
+                 ON CONFLICT (username) DO UPDATE SET password = :p, full_name = :f"""
+        with conn.session as s:
+            s.execute(sql, {"u": username, "p": hashed_pwd, "f": full_name})
+            s.commit()
+    else:
+        c = conn.cursor()
+        c.execute("REPLACE INTO users (username, password, full_name) VALUES (?, ?, ?)", (username, hashed_pwd, full_name))
+        conn.commit()
+        conn.close()
 
 def migrate_json_to_sqlite():
     if os.path.exists("data/users.json"):
@@ -823,15 +934,32 @@ else:
 
         # --- Database Status Indicator ---
         st.markdown("<hr style='margin: 1.5rem 0 1rem 0; border: 0; border-top: 1px dashed #e2e8f0;' />", unsafe_allow_html=True)
-        st.markdown("""
-            <div style='display:flex; align-items:center; gap:8px; background:#f0fdf4; border-radius:10px; padding:10px; border:1px solid #bbf7d0;'>
-                <span style='color:#16a34a; font-size:1.4rem;'>●</span>
-                <div style='display:flex; flex-direction:column; line-height:1.2;'>
-                    <span style='font-size:0.65rem; color:#16a34a; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;'>Active Session</span>
-                    <span style='font-size:0.85rem; color:#166534; font-weight:700;'>📁 Local Database (SQLite)</span>
+        conn, mode, err = get_db_connection()
+        if mode in ["postgresql", "supabase"]:
+            status_label = "🌐 Supabase (API)" if mode == "supabase" else "🌐 Cloud Database"
+            st.markdown(f"""
+                <div style='display:flex; align-items:center; gap:8px; background:#f0fdf4; border-radius:10px; padding:10px; border:1px solid #bbf7d0;'>
+                    <span style='color:#16a34a; font-size:1.4rem;'>●</span>
+                    <div style='display:flex; flex-direction:column; line-height:1.2;'>
+                        <span style='font-size:0.65rem; color:#16a34a; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;'>Active Connection</span>
+                        <span style='font-size:0.85rem; color:#166534; font-weight:700;'>{status_label}</span>
+                    </div>
                 </div>
-            </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
+        else:
+            status_text = "Secrets Missing" if "supabase" not in st.secrets and "connections" not in st.secrets else "Connection Error"
+            st.markdown(f"""
+                <div style='display:flex; align-items:center; gap:8px; background:#fef2f2; border-radius:10px; padding:10px; border:1px solid #fecaca;'>
+                    <span style='color:#dc2626; font-size:1.4rem;'>●</span>
+                    <div style='display:flex; flex-direction:column; line-height:1.2;'>
+                        <span style='font-size:0.65rem; color:#dc2626; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;'>{status_text}</span>
+                        <span style='font-size:0.85rem; color:#991b1b; font-weight:700;'>📁 Local SQLite</span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            if err:
+                with st.expander("Show connection error"):
+                    st.code(err, language="text")
 
     menu_selection = st.session_state["active_page"]
 
@@ -1132,8 +1260,21 @@ else:
         st.title("Digital Health Records")
         st.markdown(f"<p style='color:#6b7280; font-size: 1.1rem; margin-top:-1rem;'>Secure access to diagnostic history for Dr. {display_name}</p>", unsafe_allow_html=True)
         
-        history_df = pd.read_sql_query(query.replace(":d", "?"), conn, params=(st.session_state['user_name'],))
-        conn.close()
+        conn, mode, _ = get_db_connection()
+        query = "SELECT id, timestamp, patient_name, age, sex, weight, trestbps, chol, prediction_str, probability FROM patients WHERE doctor_name = :d ORDER BY timestamp DESC"
+        
+        if mode == "supabase":
+            url = f"{conn['url']}/rest/v1/patients?doctor_name=eq.{st.session_state['user_name']}&order=timestamp.desc"
+            headers = {"apikey": conn['key'], "Authorization": f"Bearer {conn['key']}"}
+            res = requests.get(url, headers=headers)
+            history_df = pd.DataFrame(res.json()) if res.ok else pd.DataFrame()
+        elif mode == "postgresql":
+            # with conn.session as s:
+            #     history_df = pd.read_sql_query(query, s.connection(), params={"d": st.session_state['user_name']})
+            history_df = conn.query(query.replace(":d", f"'{st.session_state['user_name']}'"), ttl=0)
+        else:
+            history_df = pd.read_sql_query(query.replace(":d", "?"), conn, params=(st.session_state['user_name'],))
+            conn.close()
         
         if history_df.empty:
             st.info("No clinical records found for this specialist session.")
@@ -1195,10 +1336,21 @@ else:
                     with del_col:
                         if st.button(f"🗑️ Delete Selected ({len(selected_ids)})", type="primary", use_container_width=True):
                             conn, mode, _ = get_db_connection()
-                            c = conn.cursor()
-                            c.execute(f"DELETE FROM patients WHERE id IN ({','.join(['?']*len(selected_ids))})", selected_ids)
-                            conn.commit()
-                            conn.close()
+                            if mode == "supabase":
+                                url = f"{conn['url']}/rest/v1/patients?id=in.({','.join([str(i) for i in selected_ids])})"
+                                headers = {"apikey": conn['key'], "Authorization": f"Bearer {conn['key']}"}
+                                res = requests.delete(url, headers=headers)
+                                if not res.ok: st.error(res.text)
+                            elif mode == "postgresql":
+                                sql = f"DELETE FROM patients WHERE id IN ({','.join([str(i) for i in selected_ids])})"
+                                with conn.session as s:
+                                    s.execute(sql)
+                                    s.commit()
+                            else:
+                                c = conn.cursor()
+                                c.execute(f"DELETE FROM patients WHERE id IN ({','.join(['?']*len(selected_ids))})", selected_ids)
+                                conn.commit()
+                                conn.close()
                             st.session_state['select_all_state'] = False
                             st.session_state['editor_key_counter'] += 1
                             st.success("Selected patient records deleted securely.")
