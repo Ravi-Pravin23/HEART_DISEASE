@@ -10,6 +10,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 from fpdf import FPDF
 import requests
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -167,6 +171,36 @@ def create_pdf(patient_name, doctor_name, pred, probability, age_val, chol_val, 
     
     return pdf.output(dest='S').encode('latin-1')
 
+def send_smtp_email(to_email, subject, body, attachment_bytes=None, attachment_name="Clinical_Report.pdf"):
+    """Sends a direct SMTP email (e.g., via Gmail)."""
+    smtp_server = st.session_state.get('smtp_server', "smtp.gmail.com")
+    smtp_port = st.session_state.get('smtp_port', 587)
+    smtp_user = st.session_state.get('smtp_user', "")
+    smtp_pass = st.session_state.get('smtp_pass', "")
+
+    if not smtp_user or not smtp_pass:
+        return False, "SMTP credentials not configured in Settings."
+
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = smtp_user
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'html'))
+
+        if attachment_bytes:
+            part = MIMEApplication(attachment_bytes, Name=attachment_name)
+            part['Content-Disposition'] = f'attachment; filename="{attachment_name}"'
+            msg.attach(part)
+
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+        return True, "Email sent successfully!"
+    except Exception as e:
+        return False, str(e)
+
 # --- 1. DATABASE SETUP (FR-1: User Registration) ---
 DB_NAME = "data/users.db"
 PATIENTS_DB = "data/patients.db"
@@ -275,6 +309,16 @@ if 'user_name' not in st.session_state:
     st.session_state['user_name'] = ""
 if 'n8n_webhook_url' not in st.session_state:
     st.session_state['n8n_webhook_url'] = "http://localhost:5678/webhook/heart-alert"
+if 'email_provider' not in st.session_state:
+    st.session_state['email_provider'] = "SMTP (Direct)"
+if 'smtp_server' not in st.session_state:
+    st.session_state['smtp_server'] = "smtp.gmail.com"
+if 'smtp_port' not in st.session_state:
+    st.session_state['smtp_port'] = 587
+if 'smtp_user' not in st.session_state:
+    st.session_state['smtp_user'] = ""
+if 'smtp_pass' not in st.session_state:
+    st.session_state['smtp_pass'] = ""
 
 # --- 3. UI CONFIGURATION ---
 st.set_page_config(
@@ -719,7 +763,6 @@ else:
             ("Clinical", "📂 Records"),
             ("Insights", "📈 Dashboard"),
             ("Insights", "📊 Data Explorer"),
-            ("Admin", "⚙️ Settings"),
         ]
 
         def _matches(q: str, label: str) -> bool:
@@ -791,24 +834,8 @@ else:
 
     menu_selection = st.session_state["active_page"]
 
-    # --- SETTINGS / INTEGRATION PAGE ---
-    if menu_selection == "⚙️ Settings":
-        st.title("System Integration Settings")
-        st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
-        st.subheader("n8n Automated Alerts")
-        
-        # Use a key to ensure state persistence
-        # Webhook URL input kept for configuration
-        new_url = st.text_input(
-            "Webhook Endpoint URL",
-            value=st.session_state.get('n8n_webhook_url', "http://localhost:5678/webhook/heart-alert"),
-            help="n8n webhook that receives patient data and sends the email."
-        )
-        st.session_state['n8n_webhook_url'] = new_url
-        st.markdown("</div>", unsafe_allow_html=True)
-
     # PAGE 1: 🩺 DIAGNOSTIC ASSESSMENT
-    elif menu_selection == "🩺 Assessment":
+    if menu_selection == "🩺 Assessment":
         st.title("Cardiovascular Assessment")
         
         # --- BATCH PROCESSING FEATURE ---
@@ -934,27 +961,43 @@ else:
                 thalach, exang, oldpeak, slope, ca, thal, weight, disease_name, prob
             )
 
-            # --- Send to n8n → n8n emails the patient ---
+            # --- Send Report to Patient ---
             if patient_email:
-                try:
-                    payload = {
-                        "patient_name": patient_name,
-                        "patient_email": patient_email,
-                        "patient_age": age,
-                        "patient_weight": weight,
-                        "blood_pressure": trestbps,
-                        "cholesterol": chol,
-                        "risk_probability": f"{prob*100:.2f}%",
-                        "disease_type": disease_name,
-                        "diagnosed_by": st.session_state['user_name']
-                    }
-                    response = requests.post(st.session_state['n8n_webhook_url'], json=payload, timeout=4)
-                    if response.status_code == 200:
-                        st.success(f"✅ Diagnostic report sent to **{patient_email}** via n8n!")
+                if st.session_state.get('email_provider') == "n8n (Automation)":
+                    try:
+                        payload = {
+                            "patient_name": patient_name,
+                            "patient_email": patient_email,
+                            "patient_age": age,
+                            "risk_probability": f"{prob*100:.2f}%",
+                            "disease_type": disease_name,
+                            "diagnosed_by": st.session_state['user_name']
+                        }
+                        requests.post(st.session_state['n8n_webhook_url'], json=payload, timeout=4)
+                        st.success(f"✅ Report sent via n8n to {patient_email}")
+                    except:
+                        st.info("n8n unreachable — check Settings.")
+                else:
+                    # SMTP (Direct)
+                    email_body = f"""
+                        <h3>Heart AI Clinical Assessment</h3>
+                        <p>Hello <b>{patient_name}</b>,</p>
+                        <p>Your cardiovascular risk assessment for <b>{disease_name}</b> is complete.</p>
+                        <p><b>Confidence Score:</b> {prob*100:.2f}%<br>
+                        <b>Attending Physician:</b> Dr. {st.session_state['user_name']}</p>
+                        <p><i>Please find your official diagnostic protocol PDF attached to this email.</i></p>
+                    """
+                    success, error = send_smtp_email(
+                        patient_email,
+                        f"Heart AI Diagnostic Report - {patient_name}",
+                        email_body,
+                        attachment_bytes=pdf_bytes,
+                        attachment_name=f"Heart_AI_{patient_name.replace(' ', '_')}.pdf"
+                    )
+                    if success:
+                        st.success(f"✅ Report sent directly to **{patient_email}**!")
                     else:
-                        st.warning(f"⚠️ n8n responded with status {response.status_code}")
-                except Exception:
-                    st.info("💡 n8n not reachable — configure the webhook URL in the Settings tab.")
+                        st.warning(f"⚠️ SMTP Error: {error}. Check Settings.")
         
         # --- Results Display (Persistent) ---
         if 'last_prediction' in st.session_state:
