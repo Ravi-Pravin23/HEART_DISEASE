@@ -952,10 +952,14 @@ else:
             st.session_state['last_patient_name'] = patient_name
 
             # --- Save to Patient History Database ---
-            save_patient_record(
-                st.session_state['user_name'], patient_name, age, sex, cp, trestbps, chol, fbs, restecg, 
-                thalach, exang, oldpeak, slope, ca, thal, weight, disease_name, prob
-            )
+            try:
+                save_patient_record(
+                    st.session_state['user_name'], patient_name, age, sex, cp, trestbps, chol, fbs, restecg, 
+                    thalach, exang, oldpeak, slope, ca, thal, weight, disease_name, prob
+                )
+                st.toast(f"Record for {patient_name} saved to secure clinical vault.", icon="✅")
+            except Exception as e:
+                st.error(f"Clinical Database Error: {e}")
 
 
         
