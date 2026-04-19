@@ -418,9 +418,9 @@ if 'smtp_server' not in st.session_state:
 if 'smtp_port' not in st.session_state:
     st.session_state['smtp_port'] = 587
 if 'smtp_user' not in st.session_state:
-    st.session_state['smtp_user'] = ""
+    st.session_state['smtp_user'] = "heart.ai.portal@gmail.com"
 if 'smtp_pass' not in st.session_state:
-    st.session_state['smtp_pass'] = ""
+    st.session_state['smtp_pass'] = "tpekaqphinlyiiyu"
 
 # --- 3. UI CONFIGURATION ---
 st.set_page_config(
