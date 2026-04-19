@@ -411,6 +411,8 @@ if 'n8n_webhook_url' not in st.session_state:
     st.session_state['n8n_webhook_url'] = "http://localhost:5678/webhook/heart-alert"
 if 'email_provider' not in st.session_state:
     st.session_state['email_provider'] = "SMTP (Direct)"
+if 'patient_notifications_enabled' not in st.session_state:
+    st.session_state['patient_notifications_enabled'] = False
 if 'smtp_server' not in st.session_state:
     st.session_state['smtp_server'] = "smtp.gmail.com"
 if 'smtp_port' not in st.session_state:
@@ -440,8 +442,8 @@ st.markdown("""
         color-scheme: light !important;
     }
 
-    html, body, [class*="css"] {
-        font-family: 'Poppins', sans-serif;
+    html, body {
+        font-family: 'Poppins', sans-serif !important;
         color: #1e293b !important;
     }
 
@@ -650,7 +652,8 @@ st.markdown("""
 
     /* Do not override Streamlit icon ligatures (expander/toggle chevrons) */
     span[class*="material-symbols"],
-    i[class*="material-icons"] {
+    i[class*="material-icons"],
+    [data-testid="stExpander"] summary svg {
         font-family: "Material Symbols Rounded", "Material Symbols Outlined", "Material Icons" !important;
         font-weight: normal !important;
         letter-spacing: normal !important;
@@ -737,7 +740,7 @@ st.markdown("""
         border: 1px solid #e2e8f0 !important;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
     }
-    [data-testid="stExpander"] summary span {
+    [data-testid="stExpander"] summary {
         color: #111827 !important;
         font-weight: 500 !important;
     }
@@ -863,6 +866,7 @@ else:
             ("Clinical", "📂 Records"),
             ("Insights", "📈 Dashboard"),
             ("Insights", "📊 Data Explorer"),
+            ("System", "⚙️ Settings"),
         ]
 
         def _matches(q: str, label: str) -> bool:
@@ -909,9 +913,9 @@ else:
                 st.session_state["export_records_hint"] = True
                 _set_page("📂 Records")
 
-        # n8n test button removed per user request
+        # Notification & SMTP Settings removed from expander to fix visual bug
         
-        st.markdown("<div style='margin-top: 2rem;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: 1rem;'></div>", unsafe_allow_html=True)
         display_name = st.session_state.get('full_name', st.session_state.get('user_name', ''))
         initials = "".join([p[0].upper() for p in str(display_name).split()[:2]]) or "DR"
         st.markdown(
@@ -1003,7 +1007,13 @@ else:
         st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
         st.markdown("<h3 style='margin-top: 0;'>Patient Demographics & Vitals</h3>", unsafe_allow_html=True)
         
-        patient_name = st.text_input("Patient Full Name", placeholder="e.g., John Doe")
+        col_name, col_email = st.columns([2, 1])
+        with col_name:
+            patient_name = st.text_input("Patient Full Name", value=st.session_state.get('last_patient_name', ""), placeholder="e.g., John Doe")
+        with col_email:
+            patient_email = st.text_input("Patient Email", value=st.session_state.get('last_patient_email', ""), placeholder="patient@example.com")
+        
+        st.session_state['last_patient_email'] = patient_email
         
         st.markdown("<hr style='margin: 1rem 0; border: 0; border-top: 1px solid #e5e7eb;' />", unsafe_allow_html=True)
         
@@ -1149,6 +1159,45 @@ else:
                 else:
                     st.info(f"**Action Plan for {disease_name}**\n\nAutomated analysis indicates baseline health metrics. Standard cardiovascular preventative measures are recommended.")
                 
+                # --- NEW Notification UI in Results ---
+                if st.session_state.get('patient_notifications_enabled', False) and st.session_state.get('last_patient_email'):
+                    st.markdown("<hr style='margin: 1rem 0; border: 0; border-top: 1px dashed #e2e8f0;' />", unsafe_allow_html=True)
+                    st.markdown("<p style='font-size: 0.85rem; color:#475569; font-weight:600; margin-bottom:0.5rem;'>Patient Communication</p>", unsafe_allow_html=True)
+                    
+                    if st.button("📧 Send Alert to Patient", width="stretch", key="send_email_btn"):
+                        with st.spinner("Dispatching clinical alert..."):
+                            subject = f"Clinical Assessment Result - {disease_name}"
+                            body = f"""
+                            <html>
+                            <body style="font-family: Arial, sans-serif; color: #333;">
+                                <h2 style="color: #02aadb;">Heart AI: Clinical Assessment Update</h2>
+                                <p>Dear <b>{st.session_state.get('last_patient_name', 'Patient')}</b>,</p>
+                                <p>Your diagnostic assessment result is ready for review.</p>
+                                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #02aadb;">
+                                    <b>Preliminary Finding:</b> {disease_name}<br>
+                                    <b>Confidence Level:</b> {prob*100:.2f}%
+                                </div>
+                                <p>Please find your detailed report attached. Consult your primary physician for further clinical evaluation.</p>
+                                <hr style="border:none; border-top: 1px solid #eee;">
+                                <p style="font-size: 0.8rem; color: #777;">This is an automated clinical notification from Dr. {st.session_state.get('full_name', 'Heart AI Portal')}.</p>
+                            </body>
+                            </html>
+                            """
+                            success, msg = send_smtp_email(
+                                to_email=st.session_state['last_patient_email'],
+                                subject=subject,
+                                body=body,
+                                attachment_bytes=create_pdf(
+                                    st.session_state.get('last_patient_name', ''), 
+                                    st.session_state['user_name'], 
+                                    prediction, prob, age, chol, trestbps, weight
+                                )
+                            )
+                            if success:
+                                st.success("Notification delivered to patient.")
+                            else:
+                                st.error(f"Email failed: {msg}")
+
             st.markdown("</div>", unsafe_allow_html=True)
 
             # --- Radar & Factors in two clean cards ---
@@ -1411,4 +1460,44 @@ else:
                 st.markdown("</div>", unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Explorer Error: {e}")
-
+
+    # ==========================================
+    # PAGE 5: ⚙️ SETTINGS
+    # ==========================================
+    elif menu_selection == "⚙️ Settings":
+        st.title("System Configuration")
+        st.markdown("<p style='color:#6b7280; font-size: 1.1rem; margin-top:-1rem;'>Manage clinic communications and notification providers.</p>", unsafe_allow_html=True)
+        
+        st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
+        st.markdown("<h4 style='margin-top: 0;'>Patient Communication Settings</h4>", unsafe_allow_html=True)
+        
+        st.session_state['patient_notifications_enabled'] = st.toggle("Enable Automated Patient Alerts", value=st.session_state.get('patient_notifications_enabled', False))
+        
+        if st.session_state['patient_notifications_enabled']:
+            st.info("When enabled, Dr. {st.session_state.get('user_name')} can dispatch digital reports via SMTP.")
+            
+            s1, s2 = st.columns(2)
+            with s1:
+                st.session_state['smtp_server'] = st.text_input("SMTP Server", value=st.session_state.get('smtp_server', "smtp.gmail.com"))
+                st.session_state['smtp_user'] = st.text_input("Sender Email Address", value=st.session_state.get('smtp_user', ""), placeholder="clinical.alerts@clinic.com")
+            with s2:
+                st.session_state['smtp_port'] = st.number_input("SMTP Port", value=st.session_state.get('smtp_port', 587))
+                st.session_state['smtp_pass'] = st.text_input("Email App Password", value=st.session_state.get('smtp_pass', ""), type="password")
+            
+            st.markdown("""
+                <div style='background:#f1f5f9; padding:10px; border-radius:8px; border-left:4px solid #02aadb;'>
+                    <p style='margin:0; font-size:0.8rem; color:#475569;'><b>Tip:</b> For Gmail, you must generate an <b>App Password</b> in your Google Account security settings.</p>
+                </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.warning("Patient notifications are currently disabled.")
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Additional Settings (e.g., Theme/API)
+        st.markdown("<div class='clinical-card'>", unsafe_allow_html=True)
+        st.markdown("<h4 style='margin-top: 0;'>Application Metadata</h4>", unsafe_allow_html=True)
+        st.write(f"**Version**: 1.1.0-Stable")
+        st.write(f"**Backend Mode**: {mode.upper()}")
+        st.markdown("</div>", unsafe_allow_html=True)
+
