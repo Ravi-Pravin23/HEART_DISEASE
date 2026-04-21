@@ -1311,7 +1311,7 @@ else:
         st.markdown(f"<p style='color:#6b7280; font-size: 1.1rem; margin-top:-1rem;'>Secure access to diagnostic history for Dr. {display_name}</p>", unsafe_allow_html=True)
         
         conn, mode, _ = get_db_connection()
-        query = "SELECT id, timestamp, patient_name, age, sex, weight, trestbps, chol, prediction_str, probability FROM patients WHERE doctor_name = :d ORDER BY timestamp DESC"
+        query = "SELECT * FROM patients WHERE doctor_name = :d ORDER BY timestamp DESC"
         
         if mode == "supabase":
             url = f"{conn['url']}/rest/v1/patients?doctor_name=eq.{st.session_state['user_name']}&order=timestamp.desc"
@@ -1406,11 +1406,18 @@ else:
                             st.success("Selected patient records deleted securely.")
                             st.rerun()
                     with exp_col:
-                        export_selected_df = history_df.loc[selected_labels][['timestamp', 'patient_name', 'age', 'Sex', 'weight', 'prediction_str', 'Confidence']]
+                        # Prepare Batch-Ready export for selected records
+                        features_cols = ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg', 'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal', 'weight']
+                        batch_export_cols = ['patient_name'] + features_cols + ['prediction_str', 'probability', 'timestamp']
+                        
+                        # Filter to only allow available columns
+                        final_sel_cols = [c for c in batch_export_cols if c in history_df.columns]
+                        export_selected_df = history_df.loc[selected_labels][final_sel_cols]
+                        
                         st.download_button(
-                            f"⬇️ Download Selected ({len(selected_ids)} CSV)",
+                            f"⬇️ Download Selected ({len(selected_ids)} Batch-Ready CSV)",
                             data=export_selected_df.to_csv(index=False).encode("utf-8"),
-                            file_name="selected_heart_ai_records.csv",
+                            file_name="selected_heart_ai_batch.csv",
                             mime="text/csv",
                             use_container_width=True,
                         )
@@ -1418,11 +1425,19 @@ else:
                 if st.session_state.pop("export_records_hint", False):
                     st.info("Export is ready below.")
 
-                export_df = history_df[['timestamp', 'patient_name', 'age', 'Sex', 'weight', 'prediction_str', 'Confidence']]
+                # For the download button, we provide a "Batch Ready" version (including all raw features)
+                # but we keep the display version clean for the user
+                features_cols = ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg', 'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal', 'weight']
+                export_cols = ['patient_name'] + features_cols + ['prediction_str', 'probability', 'timestamp']
+                
+                # Filter history_df to only available columns in case of old schemas
+                final_export_cols = [c for c in export_cols if c in history_df.columns]
+                export_df = history_df[final_export_cols]
+                
                 st.download_button(
-                    "Download Displayed Records (CSV)",
+                    "Download Displayed Records (Batch Ready CSV)",
                     data=export_df.to_csv(index=False).encode("utf-8"),
-                    file_name="filtered_heart_ai_records.csv",
+                    file_name="heart_ai_batch_template.csv",
                     mime="text/csv",
                     use_container_width=True,
                 )
